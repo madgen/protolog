@@ -8,8 +8,8 @@ resolve (p : ps) (p' :- qs)
   | p == p' = Just (qs <> ps)
   | otherwise = Nothing
 
-derive :: Atom -> [ Clause ] -> Bool
-derive query originalClauses = go [ query ] Nothing originalClauses
+derive :: [ Clause ] -> Atom -> Bool
+derive originalClauses query = go [ query ] Nothing originalClauses
   where
   go :: [ Atom ] -> Maybe Clause -> [ Clause ] -> Bool
   go [] _ _ = True

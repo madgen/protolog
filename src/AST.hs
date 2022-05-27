@@ -14,3 +14,6 @@ type Body = [ Atom ]
 newtype Atom = Atom Name deriving (Eq, IsString)
 
 type Name = T.Text
+
+instance Show Atom where
+  show (Atom name) = T.unpack name
