@@ -1,25 +1,29 @@
 module LinearResolution where
 
+import qualified Data.Partition as P
+
 import AST
+import Unification
+import Naming
 
 type GoalStack = [ [ Atom ] ]
 
-resolve :: GoalStack -> Clause -> Maybe GoalStack
-resolve [] _ = error "Why are you resolving?"
-resolve ([] : _) _ = error "Why are you resolving?"
-resolve ((p : ps) : pss) (q :- qs)
-  | p == q = Just (qs : ps : pss)
+resolve :: Env -> GoalStack -> Clause -> Maybe (Env, GoalStack)
+resolve _ [] _ = error "Why are you resolving?"
+resolve _ ([] : _) _ = error "Why are you resolving?"
+resolve env ((p : ps) : pss) (q :- qs)
+  | Just env <- unify env p q = Just (env, qs : ps : pss)
   | otherwise = Nothing
 
 derive :: [ Clause ] -> Atom -> Bool
-derive originalClauses query = go [ [ query ] ] Nothing originalClauses
+derive originalClauses query = go 0 P.empty [ [ query ] ] Nothing originalClauses
   where
-  go :: GoalStack -> Maybe Clause -> [ Clause ] -> Bool
-  go [] _ _ = True
-  go ([] : goals) active clauses = go goals active clauses
-  go goals Nothing (clause : clauses) = go goals (Just clause) clauses
-  go goals (Just clause) clauses =
-    case resolve goals clause of
-      Just goals' | go goals' Nothing originalClauses -> True
-      _ -> go goals Nothing clauses
-  go _ _ [] = False
+  go :: Int -> Env -> GoalStack -> Maybe Clause -> [ Clause ] -> Bool
+  go _ _ [] _ _ = True
+  go i env ([] : goals) active clauses = go i env goals active clauses
+  go i env goals Nothing (clause : clauses) = go i env goals (Just clause) clauses
+  go i env goals (Just clause) clauses =
+    case resolve env goals (nameClause i clause) of
+      Just (env', goals') | go (i + 1) env' goals' Nothing originalClauses -> True
+      _ -> go i env goals Nothing clauses
+  go _ _ _ _ [] = False

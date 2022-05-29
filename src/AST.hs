@@ -29,3 +29,7 @@ instance Show Term where
 
 instance IsString Atom where
   fromString name = Atom (T.pack name) []
+
+instance IsString Term where
+  fromString ('?' : rest) = Var (T.pack rest)
+  fromString str = Lit (T.pack str)

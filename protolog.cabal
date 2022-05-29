@@ -26,12 +26,15 @@ library
   exposed-modules:
       AST
       LinearResolution
+      Naming
+      Unification
   other-modules:
       Paths_protolog
   hs-source-dirs:
       src
   build-depends:
       base >=4.7 && <5
+    , data-partition ==0.3.*
     , text ==1.2.*
   default-language: Haskell2010
 
@@ -44,6 +47,7 @@ executable protolog-exe
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , data-partition ==0.3.*
     , protolog
     , text ==1.2.*
   default-language: Haskell2010
@@ -59,6 +63,7 @@ test-suite protolog-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , data-partition ==0.3.*
     , hspec ==2.8.*
     , protolog
     , text ==1.2.*
