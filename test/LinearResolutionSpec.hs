@@ -37,6 +37,22 @@ spec =
       it "not r" $ "r" `shouldNotSatisfy` pred
       it "not s" $ "s" `shouldNotSatisfy` pred
 
+    describe "reflexive" $ do
+      let refl t1 t2 = Atom "refl" [ t1, t2 ]
+      let pr = [ refl "?X" "?X" :- [] ]
+
+      it "refl(1, ?X) resolves to refl(1, 1)" $
+        derive pr (refl "1" "?X") `shouldBe` Just (refl "1" "1")
+
+      it "refl(?X, 1) resolves to refl(1, 1)" $
+        derive pr (refl "?X" "1") `shouldBe` Just (refl "1" "1")
+
+      it "not refl(1, 2)" $
+        derive pr (refl "1" "2") `shouldBe` Nothing
+
+      it "refl(?X, ?Y)" $
+        refl "?X" "?Y" `shouldSatisfy` isJust . derive pr
+
     describe "ancestor" $ do
       let adviser t1 t2 = Atom "adviser" [t1, t2]
       let ancestor t1 t2 = Atom "ancestor" [t1, t2]
