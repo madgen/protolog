@@ -80,3 +80,38 @@ spec =
       let pred = derive pr
       it "ancestor('Andy Rice, ?X)" $
         pred (ancestor "Andy Rice" "?X") `shouldBe` Just (ancestor "Andy Rice" "Mistral Contrastin")
+
+    describe "even" $ do
+      let even t = Atom "even" [ t ]
+      let succ t = Fx "succ" [ t ]
+      let z = "z"
+      let pr =
+            [ even z :- []
+            , even (succ $ succ "?N") :- [ even "?N" ]
+            ]
+
+      let pred = isJust . derive pr
+      it "even(z)" $
+        even z `shouldSatisfy` pred
+
+      it "not even(succ(z))" $
+        even (succ z) `shouldNotSatisfy` pred
+
+      it "even(succ(succ(z)))" $
+        even (succ $ succ z) `shouldSatisfy` pred
+
+      it "not even(succ(succ(succ(z))))" $
+        even (succ $ succ $ succ z) `shouldNotSatisfy` pred
+
+      it "even(succ(succ(succ(succ(z)))))" $
+        even (succ $ succ $ succ $ succ z) `shouldSatisfy` pred
+
+      let pred = derive pr
+      it "even((succ(?N)) resolves N to succ(z)" $
+        pred (even (succ "?N")) `shouldBe`
+        Just (even (succ $ succ "z"))
+
+      it "even(succ(succ(succ(?N)))) resolves N to succ(z)" $
+        pred (even (succ $ succ $ succ "?N")) `shouldBe`
+        Just (even (succ $ succ $ succ $ succ "z"))
+

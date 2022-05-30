@@ -11,5 +11,5 @@ nameAtom :: Int -> Atom -> Atom
 nameAtom i (Atom name terms) = Atom name $ map (nameTerm i) terms
 
 nameTerm :: Int -> Term -> Term
-nameTerm i t@Lit{} = t
+nameTerm i (Fx name terms) = Fx name (map (nameTerm i) terms)
 nameTerm i (Var v) = Var $ T.pack (show i) <> v
