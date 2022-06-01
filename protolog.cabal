@@ -27,6 +27,7 @@ library
       AST
       LinearResolution
       Naming
+      Substitution
       Unification
   other-modules:
       Paths_protolog
