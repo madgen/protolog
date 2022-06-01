@@ -16,11 +16,9 @@ resolve env ((p : ps) : pss) (q :- qs)
   | Just env <- unify env p q = Just (env, qs : ps : pss)
   | otherwise = Nothing
 
-derive :: [ Clause ] -> Atom -> Maybe (Atom, ProvenanceTree)
+derive :: [ Clause ] -> Atom -> Maybe (Env, ProvenanceTree)
 derive originalClauses query =
-  case go 0 P.empty queryGoalStack Nothing originalClauses queryProvenance of
-    Just (env, pt) -> Just (substAtom env query, substProvenanceTree env pt)
-    Nothing -> Nothing
+  go 0 P.empty queryGoalStack Nothing originalClauses queryProvenance
   where
   queryGoalStack = [ [ query ] ]
   queryProvenance = PLeaf queryGoalStack
@@ -45,6 +43,18 @@ derive originalClauses query =
     where
     namedClause = nameClause i clause
   go _ _ _ _ [] _ = Nothing
+
+run :: [ Clause ] -> Atom -> Maybe Atom
+run originalClauses query =
+  case derive originalClauses query of
+    Just (env, _pt) -> Just (substAtom env query)
+    Nothing -> Nothing
+
+runWithProvenance :: [ Clause ] -> Atom -> Maybe ProvenanceTree
+runWithProvenance originalClauses query =
+  case derive originalClauses query of
+    Just (env, pt) -> Just (substProvenanceTree env pt)
+    Nothing -> Nothing
 
 data ProvenanceTree =
     PNode ProvenanceTree GoalStack Clause

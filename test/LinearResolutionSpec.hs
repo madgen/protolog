@@ -8,6 +8,7 @@ import Test.Hspec
 
 import AST
 import LinearResolution
+import LinearResolution (runWithProvenance)
 
 
 spec :: Spec
@@ -21,7 +22,7 @@ spec =
       it "r" $ "r" `shouldSatisfy` pred
       it "not s" $ "s" `shouldNotSatisfy` pred
 
-      let pred = fmap snd . derive pr
+      let pred = runWithProvenance pr
       it "provenance of p" $
         pred "p" `shouldBe`
           Just
@@ -41,7 +42,7 @@ spec =
 
     describe "p :- q, r. q :- s. q :- r. r." $ do
       let pr = [ "p" :- ["q", "r"], "q" :- [ "s" ], "q" :- [ "r" ], "r" :- [] ]
-      let pred = isJust . derive pr
+      let pred = isJust . run pr
       it "p" $ "p" `shouldSatisfy` pred
       it "q" $ "q" `shouldSatisfy` pred
       it "r" $ "r" `shouldSatisfy` pred
@@ -49,7 +50,7 @@ spec =
 
     describe "p :- q, r. q :- s. q :- r." $ do
       let pr = [ "p" :- ["q", "r"], "q" :- [ "s" ], "q" :- [ "r" ] ]
-      let pred = isJust . derive pr
+      let pred = isJust . run pr
       it "not p" $ "p" `shouldNotSatisfy` pred
       it "not q" $ "q" `shouldNotSatisfy` pred
       it "not r" $ "r" `shouldNotSatisfy` pred
@@ -59,7 +60,7 @@ spec =
       let refl t1 t2 = Atom "refl" [ t1, t2 ]
       let pr = [ refl "?X" "?X" :- [] ]
 
-      let pred = fmap fst . derive pr
+      let pred = run pr
       it "refl(1, ?X) resolves to refl(1, 1)" $
         pred (refl "1" "?X") `shouldBe` Just (refl "1" "1")
 
@@ -96,9 +97,10 @@ spec =
       it "not ancestor('Alan Mycroft', 'Alan Mycroft')" $
         ancestor "Alan Mycroft" "Alan Mycroft" `shouldNotSatisfy` pred
 
-      let pred = fmap fst . derive pr
+      let pred = run pr
       it "ancestor('Andy Rice, ?X)" $
-        pred (ancestor "Andy Rice" "?X") `shouldBe` Just (ancestor "Andy Rice" "Mistral Contrastin")
+        pred (ancestor "Andy Rice" "?X") `shouldBe`
+        Just (ancestor "Andy Rice" "Mistral Contrastin")
 
     describe "even" $ do
       let even t = Atom "even" [ t ]
@@ -125,7 +127,7 @@ spec =
       it "even(succ(succ(succ(succ(z)))))" $
         even (succ $ succ $ succ $ succ z) `shouldSatisfy` pred
 
-      let pred = fmap fst . derive pr
+      let pred = run pr
       it "even((succ(?N)) resolves N to succ(z)" $
         pred (even (succ "?N")) `shouldBe`
         Just (even (succ $ succ "z"))
