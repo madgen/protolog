@@ -7,6 +7,8 @@ import AST
 import Unification
 import Naming
 import Substitution
+import Data.Maybe (fromMaybe)
+import Control.Applicative ((<|>))
 
 type GoalStack = [ [ Atom ] ]
 
@@ -36,11 +38,17 @@ derive originalClauses query =
   go i env goals Nothing (clause : clauses) pt = go i env goals (Just clause) clauses pt
   go i env goals (Just clause) clauses pt =
     case resolve env goals namedClause of
-      Just (env', goals')
-        | pt' <- connect pt goals' namedClause
-        , res@Just{} <- go (i + 1) env' goals' Nothing originalClauses pt' ->
-          res
-      _ -> go i env goals Nothing clauses pt
+      Just (env', goals') | pt' <- connect pt goals' namedClause ->
+        go (i + 1) env' goals' Nothing originalClauses pt'
+        <|>
+        -- Despite resolution succeeding right now, derivation fails somewhere
+        -- down the line, try the next clause discarding the additional
+        -- unifications added to the environment. In other words, we
+        -- _backtrack_ on failure.
+        go i env goals Nothing clauses pt
+      _ ->
+        -- Resolution with the current clause failed, try the next one.
+        go i env goals Nothing clauses pt
     where
     namedClause = nameClause i clause
   go _ _ _ _ [] _ = Nothing
