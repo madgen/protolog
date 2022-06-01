@@ -8,7 +8,6 @@ import Test.Hspec
 
 import AST
 import LinearResolution
-import LinearResolution (runWithProvenance)
 
 
 spec :: Spec
@@ -16,7 +15,7 @@ spec =
   describe "LinearResolution" $ do
     describe "p :- q, r. q :- r. r." $ do
       let pr = [ "p" :- ["q", "r"], "q" :- [ "r" ], "r" :- [] ]
-      let pred = isJust . derive pr
+      let pred = isJust . run pr
       it "p" $ "p" `shouldSatisfy` pred
       it "q" $ "q" `shouldSatisfy` pred
       it "r" $ "r" `shouldSatisfy` pred
@@ -30,14 +29,14 @@ spec =
               (PNode
                 (PNode
                   (PNode
-                    (PLeaf [["p"]])
-                    [["q", "r"], []]
+                    (PLeaf ["p"])
+                    ["q", "r"]
                     ("p" :- ["q", "r"]))
-                  [["r"], ["r"], []]
+                  ["r", "r"]
                   ("q" :- ["r"]))
-                [[], [], ["r"], []]
+                ["r"]
                 ("r" :- []))
-              [[],[],[]]
+              []
               ("r" :- []))
 
     describe "p :- q, r. q :- s. q :- r. r." $ do
@@ -71,7 +70,7 @@ spec =
         pred (refl "1" "2") `shouldBe` Nothing
 
       it "refl(?X, ?Y)" $
-        refl "?X" "?Y" `shouldSatisfy` isJust . derive pr
+        refl "?X" "?Y" `shouldSatisfy` isJust . run pr
 
     describe "ancestor" $ do
       let adviser t1 t2 = Atom "adviser" [t1, t2]
@@ -85,7 +84,7 @@ spec =
             , adviser "Andy Hopper" "Andy Rice" :- []
             , adviser "David Wheeler" "Andy Hopper" :- []
             ]
-      let pred = isJust . derive pr
+      let pred = isJust . run pr
       it "ancestor('Andy Rice', 'Mistral Contrastin')" $
         ancestor "Andy Rice" "Mistral Contrastin" `shouldSatisfy` pred
       it "ancestor('David Wheeler', 'Mistral Contrastin')" $
@@ -111,7 +110,7 @@ spec =
             , even (succ $ succ "?N") :- [ even "?N" ]
             ]
 
-      let pred = isJust . derive pr
+      let pred = isJust . run pr
       it "even(z)" $
         even z `shouldSatisfy` pred
 
