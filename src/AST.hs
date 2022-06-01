@@ -7,7 +7,7 @@ import qualified Data.Text as T
 import Data.String (IsString(..))
 import Data.List (intercalate)
 
-data Clause = Head :- Body
+data Clause = Head :- Body deriving Eq
 
 type Head = Atom
 
@@ -18,6 +18,9 @@ data Atom = Atom Name [ Term ] deriving Eq
 data Term = Fx Name [ Term ] | Var Name deriving (Eq, Ord)
 
 type Name = T.Text
+
+instance Show Clause where
+  show (head :- body) = show head <> " :- " <> intercalate ", " (map show body)
 
 instance {-# OVERLAPPING #-} Show [ Term ] where
   show [] = ""
