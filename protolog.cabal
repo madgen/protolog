@@ -27,6 +27,7 @@ library
       AST
       LinearResolution
       Naming
+      Provenance
       Substitution
       Unification
   other-modules:

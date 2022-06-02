@@ -8,7 +8,7 @@ import Test.Hspec
 
 import AST
 import LinearResolution
-
+import Provenance
 
 spec :: Spec
 spec =
