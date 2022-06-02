@@ -1,8 +1,8 @@
-module Unification (Env, unify) where
+module Language.Protolog.Unification (Env, unify) where
 
 import qualified Data.Partition as P
 
-import AST
+import Language.Protolog.AST
 
 type Env = P.Partition Term
 

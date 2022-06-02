@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module AST where
+module Language.Protolog.AST where
 
 import qualified Data.Text as T
 import Data.String (IsString(..))

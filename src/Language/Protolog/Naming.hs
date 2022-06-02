@@ -1,8 +1,8 @@
-module Naming (nameClause) where
+module Language.Protolog.Naming (nameClause) where
 
 import qualified Data.Text as T
 
-import AST
+import Language.Protolog.AST
 
 nameClause :: Int -> Clause -> Clause
 nameClause i (head :- body) = nameAtom i head :- map (nameAtom i) body

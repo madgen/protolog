@@ -1,8 +1,8 @@
-module Provenance where
+module Language.Protolog.Provenance where
 
-import AST
-import Unification
-import Substitution
+import Language.Protolog.AST
+import Language.Protolog.Unification
+import Language.Protolog.Substitution
 
 type GoalStack = [ [ Atom ] ]
 type FlatGoalStack = [ Atom ]

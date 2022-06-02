@@ -1,15 +1,16 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module LinearResolution where
+
+module Language.Protolog.LinearResolution where
 
 import qualified Data.Partition as P
 import Data.Maybe (fromMaybe)
 import Control.Applicative ((<|>))
 
-import AST
-import Unification
-import Naming
-import Substitution
-import Provenance
+import Language.Protolog.AST
+import Language.Protolog.Unification
+import Language.Protolog.Naming
+import Language.Protolog.Substitution
+import Language.Protolog.Provenance
 
 resolve :: Env -> GoalStack -> Clause -> Maybe (Env, GoalStack)
 resolve _ [] _ = error "Why are you resolving?"

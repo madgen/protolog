@@ -1,9 +1,9 @@
-module Substitution where
+module Language.Protolog.Substitution where
 
 import qualified Data.Partition as P
 
-import AST
-import Unification
+import Language.Protolog.AST
+import Language.Protolog.Unification
 
 substClause :: Env -> Clause -> Clause
 substClause env (head :- body) = substAtom env head :- (substAtom env <$> body)

@@ -24,12 +24,12 @@ source-repository head
 
 library
   exposed-modules:
-      AST
-      LinearResolution
-      Naming
-      Provenance
-      Substitution
-      Unification
+      Language.Protolog.AST
+      Language.Protolog.LinearResolution
+      Language.Protolog.Naming
+      Language.Protolog.Provenance
+      Language.Protolog.Substitution
+      Language.Protolog.Unification
   other-modules:
       Paths_protolog
   hs-source-dirs:
@@ -58,7 +58,7 @@ test-suite protolog-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      LinearResolutionSpec
+      Language.Protolog.LinearResolutionSpec
       Paths_protolog
   hs-source-dirs:
       test

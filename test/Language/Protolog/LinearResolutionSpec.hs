@@ -1,14 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module LinearResolutionSpec where
+module Language.Protolog.LinearResolutionSpec where
 
 import Data.Maybe (isJust)
 
 import Test.Hspec
 
-import AST
-import LinearResolution
-import Provenance
+import Language.Protolog.AST
+import Language.Protolog.LinearResolution
+import Language.Protolog.Provenance
 
 spec :: Spec
 spec =
