@@ -9,83 +9,98 @@ import Test.Hspec
 import Language.Protolog.AST
 import Language.Protolog.LinearResolution
 import Language.Protolog.Provenance
+import Language.Protolog.DSL
 
 lit :: Atom -> Literal
 lit = Literal Positive
-
-neg :: Literal -> Literal
-neg (Literal Positive atom) = Literal Negative atom
-neg (Literal Negative atom) = Literal Positive atom
 
 spec :: Spec
 spec =
   describe "LinearResolution" $ do
     describe "p :- q, r. q :- r. r." $ do
-      let pr = [ "p" :- [lit "q", lit "r"], "q" :- [ lit "r" ], "r" :- [] ]
+      let p = Atom "p" []
+      let q = Atom "q" []
+      let r = Atom "r" []
+      let s = Atom "s" []
+      let pr =
+            [ p |- q /\ r
+            , q |- r
+            , fact r
+            ]
       let pred = isJust . run pr
-      it "p" $ "p" `shouldSatisfy` pred
-      it "q" $ "q" `shouldSatisfy` pred
-      it "r" $ "r" `shouldSatisfy` pred
-      it "s fails" $ "s" `shouldNotSatisfy` pred
-      it "neg s" $ neg "s" `shouldSatisfy` pred
+      it "p" $ lit p `shouldSatisfy` pred
+      it "q" $ lit q `shouldSatisfy` pred
+      it "r" $ lit r `shouldSatisfy` pred
+      it "s fails" $ lit s `shouldNotSatisfy` pred
+      it "neg s" $ neg s `shouldSatisfy` pred
 
       let pred = runWithProvenance pr
       it "provenance of p" $
-        pred "p" `shouldBe`
+        pred (lit p) `shouldBe`
           Just
             (PNode
               (PNode
                 (PNode
                   (PNode
-                    (PLeaf ["p"])
-                    ["q", "r"]
-                    ("p" :- ["q", "r"]))
-                  ["r", "r"]
-                  ("q" :- ["r"]))
-                ["r"]
-                ("r" :- []))
+                    (PLeaf [lit p])
+                    [lit q, lit r]
+                    (p :- [lit q, lit r]))
+                  [lit r, lit r]
+                  (q :- [ lit r]))
+                [lit r]
+                (r :- []))
               []
-              ("r" :- []))
+              (r :- []))
 
     describe "p :- q, r. q :- s. q :- r. r." $ do
+      let p = Atom "p" []
+      let q = Atom "q" []
+      let r = Atom "r" []
+      let s = Atom "s" []
       let pr =
-            [ "p" :- [ lit "q", lit "r" ]
-            , "q" :- [ lit "s" ]
-            , "q" :- [ lit "r" ]
-            , "r" :- []
+            [ p |- q /\ r
+            , q |- s
+            , q |- r
+            , fact r
             ]
       let pred = isJust . run pr
-      it "p" $ "p" `shouldSatisfy` pred
-      it "q" $ "q" `shouldSatisfy` pred
-      it "r" $ "r" `shouldSatisfy` pred
-      it "not s" $ "s" `shouldNotSatisfy` pred
-      it "neg s" $ neg "s" `shouldSatisfy` pred
+      it "p" $ lit p `shouldSatisfy` pred
+      it "q" $ lit q `shouldSatisfy` pred
+      it "r" $ lit r `shouldSatisfy` pred
+      it "not s" $ lit s `shouldNotSatisfy` pred
+      it "neg s" $ neg s `shouldSatisfy` pred
 
     describe "p :- q, r. q :- s. q :- r." $ do
+      let p = Atom "p" []
+      let q = Atom "q" []
+      let r = Atom "r" []
+      let s = Atom "s" []
       let pr =
-            [ "p" :- [ lit "q", lit "r" ]
-            , "q" :- [ lit "s" ]
-            , "q" :- [ lit "r" ]
+            [ p |- q /\ r
+            , q |- s
+            , q |- r
             ]
       let pred = isJust . run pr
-      it "not p" $ "p" `shouldNotSatisfy` pred
-      it "not q" $ "q" `shouldNotSatisfy` pred
-      it "not r" $ "r" `shouldNotSatisfy` pred
-      it "not s" $ "s" `shouldNotSatisfy` pred
+      it "not p" $ lit p `shouldNotSatisfy` pred
+      it "not q" $ lit q `shouldNotSatisfy` pred
+      it "not r" $ lit r `shouldNotSatisfy` pred
+      it "not s" $ lit s `shouldNotSatisfy` pred
 
     describe "p :- q. q. q :- q. (non-terminating if backtracks)" $ do
+      let p = Atom "p" []
+      let q = Atom "q" []
       let pr =
-            [ "p" :- [ lit "q" ]
-            , "q" :- []
-            , "q" :- [ lit "q" ]
+            [ p |- q
+            , fact q
+            , q |- q
             ]
       let pred = isJust . run pr
-      it "p" $ "p" `shouldSatisfy` pred
-      it "q" $ "q" `shouldSatisfy` pred
+      it "p" $ lit p `shouldSatisfy` pred
+      it "q" $ lit q `shouldSatisfy` pred
 
     describe "reflexive" $ do
       let refl t1 t2 = Atom "refl" [ t1, t2 ]
-      let pr = [ refl "?X" "?X" :- [] ]
+      let pr = [ fact $ refl "?X" "?X" ]
 
       let pred = run pr
       it "refl(1, ?X) resolves to refl(1, 1)" $
@@ -114,13 +129,13 @@ spec =
       let adviser t1 t2 = Atom "adviser" [t1, t2]
       let ancestor t1 t2 = Atom "ancestor" [t1, t2]
       let pr =
-            [ ancestor "?X" "?Y" :- [ lit $ adviser "?X" "?Y" ]
-            , ancestor "?X" "?Z" :- [ lit $ adviser "?X" "?Y", lit $ ancestor "?Y" "?Z" ]
-            , adviser "Andy Rice" "Mistral Contrastin" :- []
-            , adviser "Dominic Orchard" "Mistral Contrastin" :- []
-            , adviser "Alan Mycroft" "Dominic Orchard" :- []
-            , adviser "Andy Hopper" "Andy Rice" :- []
-            , adviser "David Wheeler" "Andy Hopper" :- []
+            [ ancestor "?X" "?Y" |- adviser "?X" "?Y"
+            , ancestor "?X" "?Z" |- adviser "?X" "?Y" /\ ancestor "?Y" "?Z"
+            , fact $ adviser "Andy Rice" "Mistral Contrastin"
+            , fact $ adviser "Dominic Orchard" "Mistral Contrastin"
+            , fact $ adviser "Alan Mycroft" "Dominic Orchard"
+            , fact $ adviser "Andy Hopper" "Andy Rice"
+            , fact $ adviser "David Wheeler" "Andy Hopper"
             ]
       let pred = isJust . run pr
       it "ancestor('Andy Rice', 'Mistral Contrastin')" $
@@ -154,8 +169,8 @@ spec =
       let succ t = Fx "succ" [ t ]
       let z = "z"
       let pr =
-            [ even z :- []
-            , even (succ $ succ "?N") :- [ lit $ even "?N" ]
+            [ fact $ even z
+            , even (succ $ succ "?N") |- even "?N"
             ]
 
       let pred = isJust . run pr
@@ -195,16 +210,16 @@ spec =
       let kiwi t = Atom "kiwi" [ t ]
       let bird t = Atom "bird" [ t ]
       let fly t = Atom "fly" [ t ]
-      let no_fly_list  t = Atom "no_fly_list" [ t ]
+      let no_fly_list t = Atom "no_fly_list" [ t ]
       let pr =
-            [ fly "?B" :- [ lit $ bird "?B", neg $ lit $ no_fly_list "?B" ]
-            , bird "?B" :- [ lit $ robin "?B" ]
-            , bird "?B" :- [ lit $ owl "?B" ]
-            , bird "?B" :- [ lit $ kiwi "?B" ]
-            , no_fly_list "?SadBird" :- [ lit $ kiwi "?SadBird" ]
-            , robin "Henri" :- []
-            , kiwi "Mistral" :- []
-            , owl "Michael" :- []
+            [ fly "?B" |- bird "?B" /\ neg (no_fly_list "?B")
+            , bird "?B" |- robin "?B"
+            , bird "?B" |- owl "?B"
+            , bird "?B" |- kiwi "?B"
+            , no_fly_list "?SadBird" |- kiwi "?SadBird"
+            , fact $ robin "Henri"
+            , fact $ kiwi "Mistral"
+            , fact $ owl "Michael"
             ]
 
       let pred = isJust . run pr

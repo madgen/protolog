@@ -7,6 +7,8 @@ import qualified Data.Text as T
 import Data.String (IsString(..))
 import Data.List (intercalate)
 
+infix 5 :-
+
 data Clause = Head :- Body deriving Eq
 
 type Head = Atom
@@ -40,12 +42,6 @@ instance Show Atom where
 instance Show Term where
   show (Fx name terms) = T.unpack name <> show terms
   show (Var name) = T.unpack ("?" <> name)
-
-instance IsString Literal where
-  fromString name = Literal Positive (fromString name)
-
-instance IsString Atom where
-  fromString name = Atom (T.pack name) []
 
 instance IsString Term where
   fromString ('?' : rest) = Var (T.pack rest)
