@@ -5,6 +5,17 @@ import qualified Data.Partition as P
 import Language.Protolog.AST
 import Language.Protolog.Unification
 
+data Substitution = Substitution Term Term
+
+instance Show Substitution where
+  show (Substitution a b) = "[" <> show a <> "/" <> show b <> "]"
+
+mkSubst :: Env -> Term -> Substitution
+mkSubst env term = Substitution (P.rep env term) term
+
+isTrivialSubst :: Substitution -> Bool
+isTrivialSubst (Substitution a b) = a == b
+
 substClause :: Env -> Clause -> Clause
 substClause env (head :- body) =
   substAtom env head :- (substLiteral env <$> body)

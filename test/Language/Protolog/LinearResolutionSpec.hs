@@ -3,6 +3,7 @@
 module Language.Protolog.LinearResolutionSpec where
 
 import Data.Maybe (isJust)
+import qualified Data.Partition as P
 
 import Test.Hspec
 
@@ -55,12 +56,16 @@ spec =
                 (PNode
                   (PNode
                     (PLeaf [lit p])
+                    P.empty
                     [lit q, lit r]
                     (p :- [lit q, lit r]))
+                  P.empty
                   [lit r, lit r]
                   (q :- [ lit r]))
+                P.empty
                 [lit r]
                 (r :- []))
+              P.empty
               []
               (r :- []))
 

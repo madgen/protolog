@@ -47,7 +47,7 @@ derive originalClauses query =
     (i, env, pt) <- R.ask
     let namedClause = nameClause i clause
     case resolve env goals namedClause of
-      Just (env', goals') | pt' <- connect pt goals' namedClause -> do
+      Just (env', goals') | pt' <- connect pt env' goals' namedClause -> do
         onSuccess <- local (const (i + 1, env', pt')) (go goals' originalClauses)
         onFailure <- go goals clauses
         -- Despite resolution succeeding right now, derivation fails somewhere
@@ -69,5 +69,5 @@ run originalClauses query =
 runWithProvenance :: [ Clause ] -> Literal -> Maybe ProvenanceTree
 runWithProvenance originalClauses query =
   case derive originalClauses query of
-    Just (env, pt) -> Just (substProvenanceTree env pt)
+    Just (env, pt) -> Just (substProvenanceTree pt)
     Nothing -> Nothing

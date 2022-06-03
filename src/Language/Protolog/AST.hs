@@ -5,7 +5,7 @@ module Language.Protolog.AST where
 
 import qualified Data.Text as T
 import Data.String (IsString(..))
-import Data.List (intercalate)
+import Data.List (intercalate, nub)
 
 infix 5 :-
 
@@ -46,3 +46,16 @@ instance Show Term where
 instance IsString Term where
   fromString ('?' : rest) = Var (T.pack rest)
   fromString str = Fx (T.pack str) []
+
+class HasVars a where
+  vars :: a -> [ Term ]
+
+instance HasVars Literal where
+  vars (Literal _ atom) = vars atom
+
+instance HasVars Atom where
+  vars (Atom _ terms) = nub $ concatMap vars terms
+
+instance HasVars Term where
+  vars t@(Var x) = [ t ]
+  vars t@(Fx _ terms) = nub $ concatMap vars terms
