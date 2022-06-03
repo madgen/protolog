@@ -37,7 +37,10 @@ library
   build-depends:
       base >=4.7 && <5
     , data-partition ==0.3.*
+    , fgl ==5.7.*
+    , graphviz ==2999.*
     , text ==1.2.*
+    , transformers ==0.5.*
   default-language: Haskell2010
 
 executable protolog-exe
@@ -50,8 +53,11 @@ executable protolog-exe
   build-depends:
       base >=4.7 && <5
     , data-partition ==0.3.*
+    , fgl ==5.7.*
+    , graphviz ==2999.*
     , protolog
     , text ==1.2.*
+    , transformers ==0.5.*
   default-language: Haskell2010
 
 test-suite protolog-test
@@ -66,7 +72,10 @@ test-suite protolog-test
   build-depends:
       base >=4.7 && <5
     , data-partition ==0.3.*
+    , fgl ==5.7.*
+    , graphviz ==2999.*
     , hspec ==2.8.*
     , protolog
     , text ==1.2.*
+    , transformers ==0.5.*
   default-language: Haskell2010
