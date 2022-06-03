@@ -4,7 +4,9 @@ module Language.Protolog.LinearResolution where
 
 import qualified Data.Partition as P
 import Data.Maybe (fromMaybe)
+
 import Control.Applicative ((<|>))
+import Control.Monad.Trans.Reader as R
 
 import Language.Protolog.AST
 import Language.Protolog.Unification
@@ -19,37 +21,36 @@ resolve env ((p : ps) : pss) (q :- qs)
   | Just env <- unify env p q = Just (env, qs : ps : pss)
   | otherwise = Nothing
 
+type ContextM p a = Reader (Int, Env, p) a
+
 derive :: forall p. Provenance p => [ Clause ] -> Atom -> Maybe (Env, p)
 derive originalClauses query =
-  go 0 P.empty queryGoalStack originalClauses queryProvenance
+  runReader (go queryGoalStack originalClauses) (0, P.empty, queryProvenance)
   where
   queryGoalStack = [ [ query ] ]
   queryProvenance = unit queryGoalStack
 
-  go :: Int
-     -> Env
-     -> GoalStack
-     -> [ Clause ]
-     -> p
-     -> Maybe (Env, p)
-  go _ env [] _ pt = Just (env, pt)
-  go i env ([] : goals) clauses pt = go i env goals clauses pt
-  go i env goals (clause : clauses) pt =
+  go :: GoalStack -> [ Clause ] -> ContextM p (Maybe (Env, p))
+  go [] _ = do
+    (_, env, pt) <- R.ask
+    pure $ Just (env, pt)
+  go ([] : goals) clauses = go goals clauses
+  go goals (clause : clauses) = do
+    (i, env, pt) <- R.ask
+    let namedClause = nameClause i clause
     case resolve env goals namedClause of
-      Just (env', goals') | pt' <- connect pt goals' namedClause ->
-        go (i + 1) env' goals' originalClauses pt'
-        <|>
+      Just (env', goals') | pt' <- connect pt goals' namedClause -> do
+        onSuccess <- local (const (i + 1, env', pt')) (go goals' originalClauses)
+        onFailure <- go goals clauses
         -- Despite resolution succeeding right now, derivation fails somewhere
         -- down the line, try the next clause discarding the additional
         -- unifications added to the environment. In other words, we
         -- _backtrack_ on failure.
-        go i env goals clauses pt
+        pure $ onSuccess <|> onFailure
       _ ->
         -- Resolution with the current clause failed, try the next one.
-        go i env goals clauses pt
-    where
-    namedClause = nameClause i clause
-  go _ _ _ [] _ = Nothing
+        go goals clauses
+  go _ [] = pure Nothing
 
 run :: [ Clause ] -> Atom -> Maybe Atom
 run originalClauses query =
