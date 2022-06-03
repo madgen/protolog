@@ -6,7 +6,11 @@ import Language.Protolog.AST
 import Language.Protolog.Unification
 
 substClause :: Env -> Clause -> Clause
-substClause env (head :- body) = substAtom env head :- (substAtom env <$> body)
+substClause env (head :- body) =
+  substAtom env head :- (substLiteral env <$> body)
+
+substLiteral :: Env -> Literal -> Literal
+substLiteral env (Literal polarity atom) = Literal polarity (substAtom env atom)
 
 substAtom :: Env -> Atom -> Atom
 substAtom env (Atom name terms) = Atom name (substTerms env terms)

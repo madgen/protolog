@@ -10,16 +10,24 @@ import Language.Protolog.AST
 import Language.Protolog.LinearResolution
 import Language.Protolog.Provenance
 
+lit :: Atom -> Literal
+lit = Literal Positive
+
+neg :: Literal -> Literal
+neg (Literal Positive atom) = Literal Negative atom
+neg (Literal Negative atom) = Literal Positive atom
+
 spec :: Spec
 spec =
   describe "LinearResolution" $ do
     describe "p :- q, r. q :- r. r." $ do
-      let pr = [ "p" :- ["q", "r"], "q" :- [ "r" ], "r" :- [] ]
+      let pr = [ "p" :- [lit "q", lit "r"], "q" :- [ lit "r" ], "r" :- [] ]
       let pred = isJust . run pr
       it "p" $ "p" `shouldSatisfy` pred
       it "q" $ "q" `shouldSatisfy` pred
       it "r" $ "r" `shouldSatisfy` pred
-      it "not s" $ "s" `shouldNotSatisfy` pred
+      it "s fails" $ "s" `shouldNotSatisfy` pred
+      it "neg s" $ neg "s" `shouldSatisfy` pred
 
       let pred = runWithProvenance pr
       it "provenance of p" $
@@ -40,15 +48,25 @@ spec =
               ("r" :- []))
 
     describe "p :- q, r. q :- s. q :- r. r." $ do
-      let pr = [ "p" :- ["q", "r"], "q" :- [ "s" ], "q" :- [ "r" ], "r" :- [] ]
+      let pr =
+            [ "p" :- [ lit "q", lit "r" ]
+            , "q" :- [ lit "s" ]
+            , "q" :- [ lit "r" ]
+            , "r" :- []
+            ]
       let pred = isJust . run pr
       it "p" $ "p" `shouldSatisfy` pred
       it "q" $ "q" `shouldSatisfy` pred
       it "r" $ "r" `shouldSatisfy` pred
       it "not s" $ "s" `shouldNotSatisfy` pred
+      it "neg s" $ neg "s" `shouldSatisfy` pred
 
     describe "p :- q, r. q :- s. q :- r." $ do
-      let pr = [ "p" :- ["q", "r"], "q" :- [ "s" ], "q" :- [ "r" ] ]
+      let pr =
+            [ "p" :- [ lit "q", lit "r" ]
+            , "q" :- [ lit "s" ]
+            , "q" :- [ lit "r" ]
+            ]
       let pred = isJust . run pr
       it "not p" $ "p" `shouldNotSatisfy` pred
       it "not q" $ "q" `shouldNotSatisfy` pred
@@ -56,10 +74,14 @@ spec =
       it "not s" $ "s" `shouldNotSatisfy` pred
 
     describe "p :- q. q. q :- q. (non-terminating if backtracks)" $ do
-      let pr = [ "p" :- ["q"], "q" :- [], "q" :- [ "q" ] ]
+      let pr =
+            [ "p" :- [ lit "q" ]
+            , "q" :- []
+            , "q" :- [ lit "q" ]
+            ]
       let pred = isJust . run pr
-      it "not p" $ "p" `shouldSatisfy` pred
-      it "not q" $ "q" `shouldSatisfy` pred
+      it "p" $ "p" `shouldSatisfy` pred
+      it "q" $ "q" `shouldSatisfy` pred
 
     describe "reflexive" $ do
       let refl t1 t2 = Atom "refl" [ t1, t2 ]
@@ -67,23 +89,33 @@ spec =
 
       let pred = run pr
       it "refl(1, ?X) resolves to refl(1, 1)" $
-        pred (refl "1" "?X") `shouldBe` Just (refl "1" "1")
+        pred (lit $ refl "1" "?X") `shouldBe` Just (lit $ refl "1" "1")
 
       it "refl(?X, 1) resolves to refl(1, 1)" $
-        pred (refl "?X" "1") `shouldBe` Just (refl "1" "1")
+        pred (lit $ refl "?X" "1") `shouldBe` Just (lit $ refl "1" "1")
+
+      let pred = isJust . run pr
+      it "not refl(1, 2)" $
+        lit (refl "1" "2") `shouldNotSatisfy` pred
 
       it "not refl(1, 2)" $
-        pred (refl "1" "2") `shouldBe` Nothing
+        lit (refl "1" "2") `shouldNotSatisfy` pred
+
+      it "neg refl(1, 2)" $
+        neg (lit $ refl "1" "2") `shouldSatisfy` pred
+
+      it "neg refl(1, 2)" $
+        neg (lit $ refl "1" "2") `shouldSatisfy` pred
 
       it "refl(?X, ?Y)" $
-        refl "?X" "?Y" `shouldSatisfy` isJust . run pr
+        lit (refl "?X" "?Y") `shouldSatisfy` pred
 
     describe "ancestor" $ do
       let adviser t1 t2 = Atom "adviser" [t1, t2]
       let ancestor t1 t2 = Atom "ancestor" [t1, t2]
       let pr =
-            [ ancestor "?X" "?Y" :- [ adviser "?X" "?Y" ]
-            , ancestor "?X" "?Z" :- [ adviser "?X" "?Y", ancestor "?Y" "?Z" ]
+            [ ancestor "?X" "?Y" :- [ lit $ adviser "?X" "?Y" ]
+            , ancestor "?X" "?Z" :- [ lit $ adviser "?X" "?Y", lit $ ancestor "?Y" "?Z" ]
             , adviser "Andy Rice" "Mistral Contrastin" :- []
             , adviser "Dominic Orchard" "Mistral Contrastin" :- []
             , adviser "Alan Mycroft" "Dominic Orchard" :- []
@@ -92,20 +124,30 @@ spec =
             ]
       let pred = isJust . run pr
       it "ancestor('Andy Rice', 'Mistral Contrastin')" $
-        ancestor "Andy Rice" "Mistral Contrastin" `shouldSatisfy` pred
+        lit (ancestor "Andy Rice" "Mistral Contrastin") `shouldSatisfy` pred
+
       it "ancestor('David Wheeler', 'Mistral Contrastin')" $
-        ancestor "David Wheeler" "Mistral Contrastin" `shouldSatisfy` pred
+        lit(ancestor "David Wheeler" "Mistral Contrastin") `shouldSatisfy` pred
+
       it "ancestor('Alan Mycroft', 'Mistral Contrastin')" $
-        ancestor "Alan Mycroft" "Mistral Contrastin" `shouldSatisfy` pred
+        lit (ancestor "Alan Mycroft" "Mistral Contrastin") `shouldSatisfy` pred
+
       it "not ancestor('Alan Mycroft', 'Andrew Rice')" $
-        ancestor "Alan Mycroft" "Andrew Rice" `shouldNotSatisfy` pred
+        lit (ancestor "Alan Mycroft" "Andrew Rice") `shouldNotSatisfy` pred
+
       it "not ancestor('Alan Mycroft', 'Alan Mycroft')" $
-        ancestor "Alan Mycroft" "Alan Mycroft" `shouldNotSatisfy` pred
+        lit (ancestor "Alan Mycroft" "Alan Mycroft") `shouldNotSatisfy` pred
+
+      it "neg ancestor('Alan Mycroft', 'Andrew Rice')" $
+        neg (lit $ ancestor "Alan Mycroft" "Andrew Rice") `shouldSatisfy` pred
+
+      it "neg ancestor('Alan Mycroft', 'Alan Mycroft')" $
+        neg (lit $ ancestor "Alan Mycroft" "Alan Mycroft") `shouldSatisfy` pred
 
       let pred = run pr
       it "ancestor('Andy Rice, ?X)" $
-        pred (ancestor "Andy Rice" "?X") `shouldBe`
-        Just (ancestor "Andy Rice" "Mistral Contrastin")
+        pred (lit $ ancestor "Andy Rice" "?X") `shouldBe`
+        Just (lit $ ancestor "Andy Rice" "Mistral Contrastin")
 
     describe "even" $ do
       let even t = Atom "even" [ t ]
@@ -113,31 +155,64 @@ spec =
       let z = "z"
       let pr =
             [ even z :- []
-            , even (succ $ succ "?N") :- [ even "?N" ]
+            , even (succ $ succ "?N") :- [ lit $ even "?N" ]
             ]
 
       let pred = isJust . run pr
       it "even(z)" $
-        even z `shouldSatisfy` pred
+        lit (even z) `shouldSatisfy` pred
 
       it "not even(succ(z))" $
-        even (succ z) `shouldNotSatisfy` pred
+        lit (even $ succ z) `shouldNotSatisfy` pred
+
+      it "neg even(succ(z))" $
+        neg (lit $ even $ succ z) `shouldSatisfy` pred
 
       it "even(succ(succ(z)))" $
-        even (succ $ succ z) `shouldSatisfy` pred
+        lit (even $ succ $ succ z) `shouldSatisfy` pred
 
       it "not even(succ(succ(succ(z))))" $
-        even (succ $ succ $ succ z) `shouldNotSatisfy` pred
+        lit (even $ succ $ succ $ succ z) `shouldNotSatisfy` pred
+
+      it "neg even(succ(succ(succ(z))))" $
+        neg (lit $ even $ succ $ succ $ succ z) `shouldSatisfy` pred
 
       it "even(succ(succ(succ(succ(z)))))" $
-        even (succ $ succ $ succ $ succ z) `shouldSatisfy` pred
+        lit (even $ succ $ succ $ succ $ succ z) `shouldSatisfy` pred
 
       let pred = run pr
       it "even((succ(?N)) resolves N to succ(z)" $
-        pred (even (succ "?N")) `shouldBe`
-        Just (even (succ $ succ "z"))
+        pred (lit $ even (succ "?N")) `shouldBe`
+        Just (lit $ even (succ $ succ "z"))
 
       it "even(succ(succ(succ(?N)))) resolves N to succ(z)" $
-        pred (even (succ $ succ $ succ "?N")) `shouldBe`
-        Just (even (succ $ succ $ succ $ succ "z"))
+        pred (lit $ even $ succ $ succ $ succ "?N") `shouldBe`
+        Just (lit $ even $ succ $ succ $ succ $ succ "z")
 
+    describe "flying birds" $ do
+      let robin t = Atom "robin" [ t ]
+      let owl t = Atom "owl" [ t ]
+      let kiwi t = Atom "kiwi" [ t ]
+      let bird t = Atom "bird" [ t ]
+      let fly t = Atom "fly" [ t ]
+      let no_fly_list  t = Atom "no_fly_list" [ t ]
+      let pr =
+            [ fly "?B" :- [ lit $ bird "?B", neg $ lit $ no_fly_list "?B" ]
+            , bird "?B" :- [ lit $ robin "?B" ]
+            , bird "?B" :- [ lit $ owl "?B" ]
+            , bird "?B" :- [ lit $ kiwi "?B" ]
+            , no_fly_list "?SadBird" :- [ lit $ kiwi "?SadBird" ]
+            , robin "Henri" :- []
+            , kiwi "Mistral" :- []
+            , owl "Michael" :- []
+            ]
+
+      let pred = isJust . run pr
+      it "fly('Henri')" $
+        lit (fly "Henri") `shouldSatisfy` pred
+
+      it "fly('Michael')" $
+        lit (fly "Michael") `shouldSatisfy` pred
+
+      it "not fly('Mistral')" $
+        lit (fly "Mistral") `shouldNotSatisfy` pred

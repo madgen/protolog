@@ -22,8 +22,8 @@ instance Provenance () where
 -- Full-fidelity provenance tree
 --------------------------------------------------------------------------------
 
-type GoalStack = [ [ Atom ] ]
-type FlatGoalStack = [ Atom ]
+type GoalStack = [ [ Literal ] ]
+type FlatGoalStack = [ Literal ]
 
 data ProvenanceTree =
     PNode ProvenanceTree FlatGoalStack Clause
@@ -39,7 +39,7 @@ substProvenanceTree env (PNode pt gs cl) =
     (substClause env cl)
 
 substFlatGoalStack :: Env -> FlatGoalStack -> FlatGoalStack
-substFlatGoalStack env = map (substAtom env)
+substFlatGoalStack env = map (substLiteral env)
 
 instance Provenance ProvenanceTree where
   unit = PLeaf . concat

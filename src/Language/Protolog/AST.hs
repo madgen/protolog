@@ -11,7 +11,11 @@ data Clause = Head :- Body deriving Eq
 
 type Head = Atom
 
-type Body = [ Atom ]
+type Body = [ Literal ]
+
+data Literal = Literal Polarity Atom deriving Eq
+
+data Polarity = Positive | Negative deriving Eq
 
 data Atom = Atom Name [ Term ] deriving Eq
 
@@ -21,6 +25,10 @@ type Name = T.Text
 
 instance Show Clause where
   show (head :- body) = show head <> " :- " <> intercalate ", " (map show body)
+
+instance Show Literal where
+  show (Literal Positive atom) = show atom
+  show (Literal Negative atom) = "neg " <> show atom
 
 instance {-# OVERLAPPING #-} Show [ Term ] where
   show [] = ""
@@ -32,6 +40,9 @@ instance Show Atom where
 instance Show Term where
   show (Fx name terms) = T.unpack name <> show terms
   show (Var name) = T.unpack ("?" <> name)
+
+instance IsString Literal where
+  fromString name = Literal Positive (fromString name)
 
 instance IsString Atom where
   fromString name = Atom (T.pack name) []
