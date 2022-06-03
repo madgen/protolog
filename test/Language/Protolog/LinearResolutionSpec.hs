@@ -55,6 +55,12 @@ spec =
       it "not r" $ "r" `shouldNotSatisfy` pred
       it "not s" $ "s" `shouldNotSatisfy` pred
 
+    describe "p :- q. q. q :- q. (non-terminating if backtracks)" $ do
+      let pr = [ "p" :- ["q"], "q" :- [], "q" :- [ "q" ] ]
+      let pred = isJust . run pr
+      it "not p" $ "p" `shouldSatisfy` pred
+      it "not q" $ "q" `shouldSatisfy` pred
+
     describe "reflexive" $ do
       let refl t1 t2 = Atom "refl" [ t1, t2 ]
       let pr = [ refl "?X" "?X" :- [] ]
