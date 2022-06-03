@@ -20,9 +20,8 @@ substTerms env = map (substTerm env)
 
 substTerm :: Env -> Term -> Term
 substTerm env t@Var{}
-  | rep == rep' = rep
-  | otherwise = substTerm env rep'
+  | t == rep = t
+  | otherwise = substTerm env rep
   where
   rep = P.rep env t
-  rep' = substTerm env rep
 substTerm env (Fx name terms) = Fx name (substTerms env terms)
