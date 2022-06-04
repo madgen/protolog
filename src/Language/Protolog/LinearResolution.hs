@@ -40,12 +40,10 @@ derive originalClauses query =
     pure $ Just (env, pt)
   go ([] : goals) clauses = go goals clauses
   go ((Literal Negative goal : goals) : goalss) clauses = do
-    res <- go ((Literal Positive goal : goals) : goalss) clauses
+    res <- go [ [ Literal Positive goal ] ] clauses
     case res of
       Just _ -> pure Nothing
-      Nothing -> do
-        (_, env, pt) <- R.ask
-        pure $ Just (env, pt)
+      Nothing -> go (goals : goalss) clauses
   go goals (clause : clauses) = do
     (i, env, pt) <- R.ask
     let namedClause = Naming.clause i clause
