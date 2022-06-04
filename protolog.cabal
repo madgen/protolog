@@ -24,6 +24,7 @@ source-repository head
 
 library
   exposed-modules:
+      Language.Protolog
       Language.Protolog.AST
       Language.Protolog.DSL
       Language.Protolog.LinearResolution

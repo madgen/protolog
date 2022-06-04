@@ -1,18 +1,18 @@
-module Language.Protolog.Naming (nameClause) where
+module Language.Protolog.Naming (clause) where
 
 import qualified Data.Text as T
 
 import Language.Protolog.AST
 
-nameClause :: Int -> Clause -> Clause
-nameClause i (head :- body) = nameAtom i head :- map (nameLiteral i) body
+clause :: Int -> Clause -> Clause
+clause i (head :- body) = atom i head :- map (literal i) body
 
-nameLiteral :: Int -> Literal -> Literal
-nameLiteral i (Literal polarity atom) = Literal polarity (nameAtom i atom)
+literal :: Int -> Literal -> Literal
+literal i (Literal polarity a) = Literal polarity (atom i a)
 
-nameAtom :: Int -> Atom -> Atom
-nameAtom i (Atom name terms) = Atom name $ map (nameTerm i) terms
+atom :: Int -> Atom -> Atom
+atom i (Atom name ts) = Atom name $ map (term i) ts
 
-nameTerm :: Int -> Term -> Term
-nameTerm i (Fx name terms) = Fx name (map (nameTerm i) terms)
-nameTerm i (Var v) = Var $ T.pack (show i) <> v
+term :: Int -> Term -> Term
+term i (Fx name ts) = Fx name (map (term i) ts)
+term i (Var v) = Var $ T.pack (show i) <> v

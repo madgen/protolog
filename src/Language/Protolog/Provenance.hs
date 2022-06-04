@@ -8,7 +8,7 @@ import qualified Control.Monad.Trans.State as St
 
 import Language.Protolog.AST
 import Language.Protolog.Unification
-import Language.Protolog.Substitution
+import qualified Language.Protolog.Substitution as Subst
 
 class Provenance p where
   unit :: GoalStack -> p
@@ -40,7 +40,7 @@ substProvenanceTree (PNode pt env gs cl) =
     cl
 
 substFlatGoalStack :: Env -> FlatGoalStack -> FlatGoalStack
-substFlatGoalStack env = map (substLiteral env)
+substFlatGoalStack env = map (Subst.literal env)
 
 instance Provenance ProvenanceTree where
   unit = PLeaf . concat
@@ -72,7 +72,7 @@ newNode = do
 addNode :: Node -> GraphBuilderM ()
 addNode node = St.modify (\st -> st {_nodes = node : _nodes st})
 
-addEdge :: G.Node -> G.Node -> [ Substitution ] -> GraphBuilderM ()
+addEdge :: G.Node -> G.Node -> [ Subst.Substitution ] -> GraphBuilderM ()
 addEdge src dst substs =
   St.modify (\st -> st {_edges = (src, dst, label) : _edges st})
   where
@@ -104,7 +104,7 @@ toGraph = mkGraph . go
     addEdge src2 dst substs2
     pure dst
 
-  edgeSubsts env = filter (not . isTrivialSubst) . fmap (mkSubst env) . vars
+  edgeSubsts env = filter (not . Subst.isTrivial) . fmap (Subst.mk env) . vars
 
 headGoal :: ProvenanceTree -> Literal
 headGoal (PNode _ _ [] _) = error "Called it on the root node"

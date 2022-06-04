@@ -1,6 +1,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Language.Protolog.LinearResolution where
+module Language.Protolog.LinearResolution
+  ( run
+  , runWithProvenance
+  ) where
 
 import qualified Data.Partition as P
 import Data.Maybe (fromMaybe)
@@ -9,29 +12,29 @@ import Control.Applicative ((<|>))
 import Control.Monad.Trans.Reader as R
 
 import Language.Protolog.AST
-import Language.Protolog.Unification
-import Language.Protolog.Naming
-import Language.Protolog.Substitution
+import qualified Language.Protolog.Unification as Unify
+import qualified Language.Protolog.Naming as Naming
+import qualified Language.Protolog.Substitution as Subst
 import Language.Protolog.Provenance
 
-resolve :: Env -> GoalStack -> Clause -> Maybe (Env, GoalStack)
+resolve :: Unify.Env -> GoalStack -> Clause -> Maybe (Unify.Env, GoalStack)
 resolve _ [] _ = error "Why are you resolving?"
 resolve _ ([] : _) _ = error "Why are you resolving?"
 resolve _ ((Literal Negative _: _) : _) _ = error "Can't resolve a negative goal"
 resolve env ((Literal Positive p : ps) : pss) (q :- qs)
-  | Just env <- unify env p q = Just (env, qs : ps : pss)
+  | Just env <- Unify.atom env p q = Just (env, qs : ps : pss)
   | otherwise = Nothing
 
-type ContextM p a = Reader (Int, Env, p) a
+type ContextM p a = Reader (Int, Unify.Env, p) a
 
-derive :: forall p. Provenance p => [ Clause ] -> Literal -> Maybe (Env, p)
+derive :: forall p. Provenance p => [ Clause ] -> Literal -> Maybe (Unify.Env, p)
 derive originalClauses query =
   runReader (go queryGoalStack originalClauses) (0, P.empty, queryProvenance)
   where
   queryGoalStack = [ [ query ] ]
   queryProvenance = unit queryGoalStack
 
-  go :: GoalStack -> [ Clause ] -> ContextM p (Maybe (Env, p))
+  go :: GoalStack -> [ Clause ] -> ContextM p (Maybe (Unify.Env, p))
   go [] _ = do
     (_, env, pt) <- R.ask
     pure $ Just (env, pt)
@@ -45,7 +48,7 @@ derive originalClauses query =
         pure $ Just (env, pt)
   go goals (clause : clauses) = do
     (i, env, pt) <- R.ask
-    let namedClause = nameClause i clause
+    let namedClause = Naming.clause i clause
     case resolve env goals namedClause of
       Just (env', goals') | pt' <- connect pt env' goals' namedClause -> do
         onSuccess <- local (const (i + 1, env', pt')) (go goals' originalClauses)
@@ -63,7 +66,7 @@ derive originalClauses query =
 run :: [ Clause ] -> Literal -> Maybe Literal
 run originalClauses query =
   case derive originalClauses query of
-    Just (env, ()) -> Just (substLiteral env query)
+    Just (env, ()) -> Just (Subst.literal env query)
     Nothing -> Nothing
 
 runWithProvenance :: [ Clause ] -> Literal -> Maybe ProvenanceTree

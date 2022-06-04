@@ -1,38 +1,46 @@
-module Language.Protolog.Substitution where
+module Language.Protolog.Substitution
+  ( mk
+  , isTrivial
+  , clause
+  , literal
+  , atom
+  , term
+  , Substitution(..)
+  ) where
 
 import qualified Data.Partition as P
 
 import Language.Protolog.AST
-import Language.Protolog.Unification
+import qualified Language.Protolog.Unification as Unify
 
 data Substitution = Substitution Term Term
 
 instance Show Substitution where
   show (Substitution a b) = "[" <> show a <> "/" <> show b <> "]"
 
-mkSubst :: Env -> Term -> Substitution
-mkSubst env term = Substitution (P.rep env term) term
+mk :: Unify.Env -> Term -> Substitution
+mk env term = Substitution (P.rep env term) term
 
-isTrivialSubst :: Substitution -> Bool
-isTrivialSubst (Substitution a b) = a == b
+isTrivial :: Substitution -> Bool
+isTrivial (Substitution a b) = a == b
 
-substClause :: Env -> Clause -> Clause
-substClause env (head :- body) =
-  substAtom env head :- (substLiteral env <$> body)
+clause :: Unify.Env -> Clause -> Clause
+clause env (head :- body) =
+  atom env head :- (literal env <$> body)
 
-substLiteral :: Env -> Literal -> Literal
-substLiteral env (Literal polarity atom) = Literal polarity (substAtom env atom)
+literal :: Unify.Env -> Literal -> Literal
+literal env (Literal polarity a) = Literal polarity (atom env a)
 
-substAtom :: Env -> Atom -> Atom
-substAtom env (Atom name terms) = Atom name (substTerms env terms)
+atom :: Unify.Env -> Atom -> Atom
+atom env (Atom name ts) = Atom name (terms env ts)
 
-substTerms :: Env -> [ Term ] -> [ Term ]
-substTerms env = map (substTerm env)
+terms :: Unify.Env -> [ Term ] -> [ Term ]
+terms env = map (term env)
 
-substTerm :: Env -> Term -> Term
-substTerm env t@Var{}
+term :: Unify.Env -> Term -> Term
+term env t@Var{}
   | t == rep = t
-  | otherwise = substTerm env rep
+  | otherwise = term env rep
   where
   rep = P.rep env t
-substTerm env (Fx name terms) = Fx name (substTerms env terms)
+term env (Fx name ts) = Fx name (terms env ts)
