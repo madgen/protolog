@@ -30,6 +30,7 @@ library
       Language.Protolog.LinearResolution
       Language.Protolog.Naming
       Language.Protolog.Provenance
+      Language.Protolog.StdLib.List
       Language.Protolog.Substitution
       Language.Protolog.Unification
   other-modules:
