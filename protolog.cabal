@@ -33,6 +33,7 @@ library
       Language.Protolog.StdLib.List
       Language.Protolog.Substitution
       Language.Protolog.Unification
+      TransitiveClosure
       WolfGoatCabbage
   other-modules:
       Paths_protolog
