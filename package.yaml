@@ -27,7 +27,9 @@ dependencies:
 - graphviz >= 2999 && < 3000
 
 library:
-  source-dirs: src
+  source-dirs:
+  - src
+  - examples
 
 tests:
   protolog-test:

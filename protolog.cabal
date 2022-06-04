@@ -33,10 +33,12 @@ library
       Language.Protolog.StdLib.List
       Language.Protolog.Substitution
       Language.Protolog.Unification
+      WolfGoatCabbage
   other-modules:
       Paths_protolog
   hs-source-dirs:
       src
+      examples
   build-depends:
       base >=4.7 && <5
     , data-partition ==0.3.*
