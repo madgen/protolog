@@ -25,8 +25,13 @@ data Term = Fx Name [ Term ] | Var Name deriving (Eq, Ord)
 
 type Name = T.Text
 
+instance {-# OVERLAPPING #-} Show [ Clause ] where
+  show clauses = intercalate "\n" (map show clauses)
+
 instance Show Clause where
-  show (head :- body) = show head <> " :- " <> intercalate ", " (map show body)
+  show (head :- []) = show head <> "."
+  show (head :- body) =
+    show head <> " |- " <> intercalate " /\\ " (map show body) <> "."
 
 instance Show Literal where
   show (Literal Positive atom) = show atom
@@ -34,7 +39,7 @@ instance Show Literal where
 
 instance {-# OVERLAPPING #-} Show [ Term ] where
   show [] = ""
-  show terms = "(" <> intercalate "," (map show terms) <> ")"
+  show terms = "(" <> intercalate ", " (map show terms) <> ")"
 
 instance Show Atom where
   show (Atom name terms) = T.unpack name <> show terms
