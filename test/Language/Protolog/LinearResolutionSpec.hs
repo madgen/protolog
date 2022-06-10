@@ -1,4 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds #-}
 
 module Language.Protolog.LinearResolutionSpec where
 
@@ -34,11 +36,17 @@ spec :: Spec
 spec =
   describe "LinearResolution" $ do
     describe "p :- q, r. q :- r. r." $ do
-      let [p, q, r, s] = (`Atom` []) <$> ["p", "q", "r", "s"]
-      let pr = generate_ $ do
+      let ((p, q, r, s), pr) = generate $ do
+            p <- freshPred @0
+            q <- freshPred @0
+            r <- freshPred @0
+            s <- freshPred @0
+
             p |- q /\ r
             q |- r
             r |- ()
+
+            pure (p, q, r, s)
 
       it "p" $ holds pr p
       it "q" $ holds pr q
@@ -69,12 +77,18 @@ spec =
               (r :- []))
 
     describe "p :- q, r. q :- s. q :- r. r." $ do
-      let [p, q, r, s] = (`Atom` []) <$> ["p", "q", "r", "s"]
-      let pr = generate_ $ do
+      let ((p, q, r, s), pr) = generate $ do
+            p <- freshPred @0
+            q <- freshPred @0
+            r <- freshPred @0
+            s <- freshPred @0
+
             p |- q /\ r
             q |- s
             q |- r
             r |- ()
+
+            pure (p,q,r,s)
 
       it "p" $ holds pr p
       it "q" $ holds pr q
@@ -83,11 +97,17 @@ spec =
       it "neg s" $ holds pr (neg s)
 
     describe "p :- q, r. q :- s. q :- r." $ do
-      let [p, q, r, s] = (`Atom` []) <$> ["p", "q", "r", "s"]
-      let pr = generate_ $ do
+      let ((p, q, r, s), pr) = generate $ do
+            p <- freshPred @0
+            q <- freshPred @0
+            r <- freshPred @0
+            s <- freshPred @0
+
             p |- q /\ r
             q |- s
             q |- r
+
+            pure (p,q,r,s)
 
       it "not p" $ doesntHold pr p
       it "not q" $ doesntHold pr q
@@ -95,20 +115,24 @@ spec =
       it "not s" $ doesntHold pr s
 
     describe "p :- q. q. q :- q. (non-terminating if backtracks)" $ do
-      let [p, q] = (`Atom` []) <$> ["p", "q"]
-      let p = Atom "p" []
-      let q = Atom "q" []
-      let pr = generate_ $ do
+      let ((p, q), pr) = generate $ do
+            p <- freshPred @0
+            q <- freshPred @0
+
             p |- q
             q |- ()
             q |- q
+
+            pure (p, q)
 
       it "p" $ holds pr p
       it "q" $ holds pr q
 
     describe "reflexive" $ do
-      let refl t1 t2 = Atom "refl" [ t1, t2 ]
-      let pr = generate_ $ refl "?X" "?X" |- ()
+      let (refl, pr) = generate $ do
+            refl <- freshPred @2
+            refl "?X" "?X" |- ()
+            pure refl
 
       let resolvesTo' = resolvesTo pr
       it "refl(1, ?X) resolves to refl(1, 1)" $
@@ -124,16 +148,19 @@ spec =
       it "refl(?X, ?Y)" $ holds pr $ refl "?X" "?Y"
 
     describe "ancestor" $ do
-      let adviser t1 t2 = Atom "adviser" [t1, t2]
-      let ancestor t1 t2 = Atom "ancestor" [t1, t2]
-      let pr = generate_ $ do
-            ancestor "?X" "?Y" |- adviser "?X" "?Y"
-            ancestor "?X" "?Z" |- adviser "?X" "?Y" /\ ancestor "?Y" "?Z"
+      let (ancestor, pr) = generate $ do
+            adviser <- freshPred @2
             adviser "Andy Rice" "Mistral Contrastin" |- ()
             adviser "Dominic Orchard" "Mistral Contrastin" |- ()
             adviser "Alan Mycroft" "Dominic Orchard" |- ()
             adviser "Andy Hopper" "Andy Rice" |- ()
             adviser "David Wheeler" "Andy Hopper" |- ()
+
+            ancestor <- freshPred @2
+            ancestor "?X" "?Y" |- adviser "?X" "?Y"
+            ancestor "?X" "?Z" |- adviser "?X" "?Y" /\ ancestor "?Y" "?Z"
+
+            pure ancestor
 
       it "ancestor('Andy Rice', 'Mistral Contrastin')" $
         holds pr $ ancestor "Andy Rice" "Mistral Contrastin"
@@ -162,12 +189,13 @@ spec =
         ancestor "Andy Rice" "Mistral Contrastin"
 
     describe "even" $ do
-      let even t = Atom "even" [ t ]
       let succ t = Fx "succ" [ t ]
       let z = "z"
-      let pr = generate_ $ do
+      let (even, pr) = generate $ do
+            even <- freshPred @1
             even z |- ()
             even (succ $ succ "?N") |- even "?N"
+            pure even
 
       it "even(z)" $ holds pr $ even z
 
@@ -199,18 +227,26 @@ spec =
         even (succ $ succ $ succ $ succ "z")
 
     describe "flying birds" $ do
-      let [robin, owl, kiwi, bird, fly, no_fly_list] =
-            (\name t -> Atom name [ t ]) <$>
-              ["robin", "owl", "kiwi", "bird", "fly", "no_fly_list"]
-      let pr = generate_ $ do
-            fly "?B" |- bird "?B" /\ neg (no_fly_list "?B")
+      let (fly, pr) = generate $ do
+            robin <- freshPred @1
+            robin "Henri" |- ()
+            kiwi <- freshPred @1
+            kiwi "Mistral" |- ()
+            owl <- freshPred @1
+            owl "Michael" |- ()
+
+            bird <- freshPred @1
             bird "?B" |- robin "?B"
             bird "?B" |- owl "?B"
             bird "?B" |- kiwi "?B"
+
+            no_fly_list <- freshPred @1
             no_fly_list "?SadBird" |- kiwi "?SadBird"
-            robin "Henri" |- ()
-            kiwi "Mistral" |- ()
-            owl "Michael" |- ()
+
+            fly <- freshPred @1
+            fly "?B" |- bird "?B" /\ neg (no_fly_list "?B")
+
+            pure fly
 
       it "fly('Henri')" $
         holds pr (fly "Henri")

@@ -1,4 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds #-}
 module WolfGoatCabbage where
 
 import qualified Language.Protolog.StdLib.List as List
@@ -17,33 +19,11 @@ bank f w g c = Fx "bank" [f, w, g, c]
 state :: Term -> Term -> Term
 state h m = Fx "state" [h, m]
 
-move :: Term -> Term -> Atom
-move stBefore stAfter = Atom "move" [ stBefore, stAfter ]
-
-bimove :: Term -> Term -> Atom
-bimove stBefore stAfter = Atom "bimove" [ stBefore, stAfter ]
-
-start, end :: Term -> Atom
-start t = Atom "start" [ t ]
-end t = Atom "end" [ t ]
-
-safe, unsafe :: Term -> Atom
-safe t = Atom "safe" [ t ]
-unsafe t = Atom "unsafe" [ t ]
-
-legal :: Term -> Atom
-legal t = Atom "legal" [ t ]
-
-solve' :: Term -> Term -> Term -> Atom
-solve' st history sts = Atom "solve'" [ st, history, sts ]
-
-solve :: Term -> Atom
-solve sts = Atom "solve" [ sts ]
-
-program :: ProtologM ()
+program :: ProtologM (Term -> Atom)
 program = do
   List.include
   -- Moves in one direction
+  move <- freshPred @2
   move
     (state
       (bank farmer wolf "?C" "?G") (bank vacant vacant "?C'" "?G'"))
@@ -70,27 +50,41 @@ program = do
     |- ()
 
   -- Moves back and forth
+  bimove <- freshPred @2
   bimove "?St" "?St'" |- move "?St" "?St'"
   bimove "?St" "?St'" |- move "?St'" "?St"
 
   -- Start and end states
+  start <- freshPred @1
   start (state (bank farmer wolf cabbage goat) (bank vacant vacant vacant vacant)) |- ()
+
+  end <- freshPred @1
   end (state (bank vacant vacant vacant vacant) (bank farmer wolf cabbage goat))  |- ()
 
   -- Legal state
+  unsafe <- freshPred @1
   unsafe (bank vacant wolf "?C" goat) |- ()
   unsafe (bank vacant "?W" cabbage goat) |- ()
+
+  safe <- freshPred @1
   safe (bank farmer "?W" "?C" "?G") |- ()
   safe "?B" |- neg (unsafe "?B")
+
+  legal <- freshPred @1
   legal (state "?B" "?B'") |- safe "?B" /\ safe "?B'"
 
   -- Solver
+  solve' <- freshPred @3
   solve' "?St" "?History" "?History" |- end "?St"
   solve' "?St" "?History" "?Sts" |-
     bimove "?St" "?St'" /\
     neg (List.member "?St'" "?History") /\
     legal "?St'" /\
     solve' "?St'" (List.cons "?St'" "?History") "?Sts"
+
+  solve <- freshPred @1
   solve "?Sts" |-
     start "?St" /\
     solve' "?St" (List.cons "?St" List.nil) "?Sts"
+
+  pure solve

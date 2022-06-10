@@ -1,23 +1,23 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds #-}
 module TransitiveClosure where
 
 import Language.Protolog
 
-transitiveClosure :: (Term -> Term -> Atom) -> (Term -> Term -> Atom) -> ProtologM ()
-transitiveClosure tr base = do
+transitiveClosure :: (Term -> Term -> Atom) -> ProtologM (Term -> Term -> Atom)
+transitiveClosure base = do
+  tr <- freshPred @2
   tr "?X" "?Y" |- base "?X" "?Y"
   tr "?X" "?Z" |- base "?X" "?Y" /\ tr "?Y" "?Z"
+  pure tr
 
-adviser :: Term -> Term -> Atom
-adviser t1 t2 = Atom "adviser" [ t1, t2 ]
-
-academicAncestor :: Term -> Term -> Atom
-academicAncestor t1 t2 = Atom "academicAncestor" [ t1, t2 ]
-
-program :: ProtologM ()
+program :: ProtologM (Term -> Term -> Atom)
 program = do
-  transitiveClosure academicAncestor adviser
+  adviser <- freshPred @2
   adviser "Alan Turing" "Alonzo Church" |- ()
   adviser "Dana Scott" "Alonzo Church" |- ()
   adviser "Raymond Smullyan" "Alonzo Church" |- ()
   adviser "Alonzo Church" "Oswald Veblen" |- ()
+
+  transitiveClosure adviser
