@@ -6,22 +6,23 @@ module WolfGoatCabbage where
 import qualified Language.Protolog.StdLib.List as List
 import Language.Protolog
 
-wolf, goat, cabbage, farmer, vacant :: Term
-wolf = Fx "wolf" []
-goat = Fx "goat" []
-cabbage = Fx "cabbage" []
-farmer = Fx "farmer" []
-vacant = Fx "vacant" []
-
-bank :: Term -> Term -> Term -> Term -> Term
-bank f w g c = Fx "bank" [f, w, g, c]
-
-state :: Term -> Term -> Term
-state h m = Fx "state" [h, m]
-
 program :: ProtologM (Term -> Atom)
 program = do
   List.include
+
+  wolf <- freshFx @0
+  goat <- freshFx @0
+  cabbage <- freshFx @0
+  farmer <- freshFx @0
+  vacant <- freshFx @0
+
+  -- A bank that is one side of river has four spots that are either vacant or
+  -- occupied by one of goat, cabbage, wolf, and farmer.
+  bank <- freshFx @4
+
+  -- A state is two banks at any given time
+  state <- freshFx @2
+
   -- Moves in one direction
   move <- freshPred @2
   move

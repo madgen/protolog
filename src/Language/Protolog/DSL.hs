@@ -68,41 +68,80 @@ instance Negatable Literal where
   neg (Literal Positive atom) = Literal Negative atom
   neg (Literal Negative atom) = error "No support for double negation"
 
-class KnownNat n => Predicable n fx | n -> fx where
+class KnownNat n => CanPredicate n fx | n -> fx where
   mkPred :: T.Text -> fx
 
-instance Predicable 0 Atom where
+instance CanPredicate 0 Atom where
   mkPred name = Atom name []
 
-instance Predicable 1 (Term -> Atom) where
+instance CanPredicate 1 (Term -> Atom) where
   mkPred name t = Atom name [ t ]
 
-instance Predicable 2 (Term -> Term -> Atom) where
+instance CanPredicate 2 (Term -> Term -> Atom) where
   mkPred name t1 t2 = Atom name [ t1, t2 ]
 
-instance Predicable 3 (Term -> Term -> Term -> Atom) where
+instance CanPredicate 3 (Term -> Term -> Term -> Atom) where
   mkPred name t1 t2 t3 = Atom name [ t1, t2, t3 ]
 
-instance Predicable 4 (Term -> Term -> Term -> Term -> Atom) where
+instance CanPredicate 4 (Term -> Term -> Term -> Term -> Atom) where
   mkPred name t1 t2 t3 t4 = Atom name [ t1, t2, t3, t4 ]
 
-instance Predicable 5 (Term -> Term -> Term -> Term -> Term -> Atom) where
+instance CanPredicate 5 (Term -> Term -> Term -> Term -> Term -> Atom) where
   mkPred name t1 t2 t3 t4 t5 = Atom name [ t1, t2, t3, t4, t5 ]
 
-instance Predicable 6 (Term -> Term -> Term -> Term -> Term -> Term -> Atom) where
+instance CanPredicate 6 (Term -> Term -> Term -> Term -> Term -> Term -> Atom) where
   mkPred name t1 t2 t3 t4 t5 t6 = Atom name [ t1, t2, t3, t4, t5, t6 ]
 
-instance Predicable 7 (Term -> Term -> Term -> Term -> Term -> Term -> Term -> Atom) where
+instance CanPredicate 7 (Term -> Term -> Term -> Term -> Term -> Term -> Term -> Atom) where
   mkPred name t1 t2 t3 t4 t5 t6 t7 = Atom name [ t1, t2, t3, t4, t5, t6, t7 ]
 
-instance Predicable 8 (Term -> Term -> Term -> Term -> Term -> Term -> Term -> Term -> Atom) where
+instance CanPredicate 8 (Term -> Term -> Term -> Term -> Term -> Term -> Term -> Term -> Atom) where
   mkPred name t1 t2 t3 t4 t5 t6 t7 t8 = Atom name [ t1, t2, t3, t4, t5, t6, t7, t8 ]
 
-instance Predicable 9 (Term -> Term -> Term -> Term -> Term -> Term -> Term -> Term -> Term -> Atom) where
+instance CanPredicate 9 (Term -> Term -> Term -> Term -> Term -> Term -> Term -> Term -> Term -> Atom) where
   mkPred name t1 t2 t3 t4 t5 t6 t7 t8 t9 = Atom name [ t1, t2, t3, t4, t5, t6, t7, t8, t9 ]
 
-freshPred :: forall n fx. Predicable n fx => ProtologM fx
+freshPred :: forall n fx. CanPredicate n fx => ProtologM fx
 freshPred = do
   ctr <- _counter <$> St.get
   St.modify (\st -> st { _counter = ctr + 1 })
   pure $ mkPred @n (T.pack $ "_p" <> show ctr)
+
+class KnownNat n => CanFunction n fx | n -> fx where
+  mkFx :: T.Text -> fx
+
+instance CanFunction 0 Term where
+  mkFx name = Fx name []
+
+instance CanFunction 1 (Term -> Term) where
+  mkFx name t = Fx name [ t ]
+
+instance CanFunction 2 (Term -> Term -> Term) where
+  mkFx name t1 t2 = Fx name [ t1, t2 ]
+
+instance CanFunction 3 (Term -> Term -> Term -> Term) where
+  mkFx name t1 t2 t3 = Fx name [ t1, t2, t3 ]
+
+instance CanFunction 4 (Term -> Term -> Term -> Term -> Term) where
+  mkFx name t1 t2 t3 t4 = Fx name [ t1, t2, t3, t4 ]
+
+instance CanFunction 5 (Term -> Term -> Term -> Term -> Term -> Term) where
+  mkFx name t1 t2 t3 t4 t5 = Fx name [ t1, t2, t3, t4, t5 ]
+
+instance CanFunction 6 (Term -> Term -> Term -> Term -> Term -> Term -> Term) where
+  mkFx name t1 t2 t3 t4 t5 t6 = Fx name [ t1, t2, t3, t4, t5, t6 ]
+
+instance CanFunction 7 (Term -> Term -> Term -> Term -> Term -> Term -> Term -> Term) where
+  mkFx name t1 t2 t3 t4 t5 t6 t7 = Fx name [ t1, t2, t3, t4, t5, t6, t7 ]
+
+instance CanFunction 8 (Term -> Term -> Term -> Term -> Term -> Term -> Term -> Term -> Term) where
+  mkFx name t1 t2 t3 t4 t5 t6 t7 t8 = Fx name [ t1, t2, t3, t4, t5, t6, t7, t8 ]
+
+instance CanFunction 9 (Term -> Term -> Term -> Term -> Term -> Term -> Term -> Term -> Term -> Term) where
+  mkFx name t1 t2 t3 t4 t5 t6 t7 t8 t9 = Fx name [ t1, t2, t3, t4, t5, t6, t7, t8, t9 ]
+
+freshFx :: forall n fx. CanFunction n fx => ProtologM fx
+freshFx = do
+  ctr <- _counter <$> St.get
+  St.modify (\st -> st { _counter = ctr + 1 })
+  pure $ mkFx @n (T.pack $ "_f" <> show ctr)

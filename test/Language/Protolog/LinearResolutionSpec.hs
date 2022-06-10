@@ -189,13 +189,15 @@ spec =
         ancestor "Andy Rice" "Mistral Contrastin"
 
     describe "even" $ do
-      let succ t = Fx "succ" [ t ]
-      let z = "z"
-      let (even, pr) = generate $ do
+      let ((z, succ, even), pr) = generate $ do
+            -- Natural numbers
+            z <- freshFx @0
+            succ <- freshFx @1
+
             even <- freshPred @1
             even z |- ()
             even (succ $ succ "?N") |- even "?N"
-            pure even
+            pure (z, succ, even)
 
       it "even(z)" $ holds pr $ even z
 
@@ -220,11 +222,11 @@ spec =
       let resolvesTo' = resolvesTo pr
       it "even((succ(?N)) resolves N to succ(z)" $
         even (succ "?N") `resolvesTo'`
-        even (succ $ succ "z")
+        even (succ $ succ z)
 
       it "even(succ(succ(succ(?N)))) resolves N to succ(z)" $
         even (succ $ succ $ succ "?N") `resolvesTo'`
-        even (succ $ succ $ succ $ succ "z")
+        even (succ $ succ $ succ $ succ z)
 
     describe "flying birds" $ do
       let (fly, pr) = generate $ do
