@@ -40,54 +40,57 @@ solve' st history sts = Atom "solve'" [ st, history, sts ]
 solve :: Term -> Atom
 solve sts = Atom "solve" [ sts ]
 
-program :: [ Clause ]
-program =
-  List.defs <>
+program :: ProtologM ()
+program = do
+  List.include
   -- Moves in one direction
-  [ fact $ move
-      (state
-        (bank farmer wolf "?C" "?G") (bank vacant vacant "?C'" "?G'"))
-      (state
-        (bank vacant vacant "?C" "?G") (bank farmer wolf "?C'" "?G'"))
-  , fact $ move
-      (state
-        (bank farmer "?W" cabbage "?G") (bank vacant "?W'" vacant "?G'"))
-      (state
-        (bank vacant "?W" vacant "?G") (bank farmer "?W'" cabbage "?G'"))
-  , fact $ move
-      (state
-        (bank farmer "?W" "?C" goat) (bank vacant "?W'" "?C'" vacant))
-      (state
-        (bank vacant "?W" "?C" vacant) (bank farmer "?W'" "?C'" goat))
-  , fact $ move
-      (state
-        (bank farmer "?W" "?C" "?G") (bank vacant "?W'" "?C'" "?G'"))
-      (state
-        (bank vacant "?W" "?C" "?G") (bank farmer "?W'" "?C'" "?G'"))
+  move
+    (state
+      (bank farmer wolf "?C" "?G") (bank vacant vacant "?C'" "?G'"))
+    (state
+      (bank vacant vacant "?C" "?G") (bank farmer wolf "?C'" "?G'"))
+    |- ()
+  move
+    (state
+      (bank farmer "?W" cabbage "?G") (bank vacant "?W'" vacant "?G'"))
+    (state
+      (bank vacant "?W" vacant "?G") (bank farmer "?W'" cabbage "?G'"))
+    |- ()
+  move
+    (state
+      (bank farmer "?W" "?C" goat) (bank vacant "?W'" "?C'" vacant))
+    (state
+      (bank vacant "?W" "?C" vacant) (bank farmer "?W'" "?C'" goat))
+    |- ()
+  move
+    (state
+      (bank farmer "?W" "?C" "?G") (bank vacant "?W'" "?C'" "?G'"))
+    (state
+      (bank vacant "?W" "?C" "?G") (bank farmer "?W'" "?C'" "?G'"))
+    |- ()
 
   -- Moves back and forth
-  , bimove "?St" "?St'" |- move "?St" "?St'"
-  , bimove "?St" "?St'" |- move "?St'" "?St"
+  bimove "?St" "?St'" |- move "?St" "?St'"
+  bimove "?St" "?St'" |- move "?St'" "?St"
 
   -- Start and end states
-  , fact $ start $ state (bank farmer wolf cabbage goat) (bank vacant vacant vacant vacant)
-  , fact $ end $ state (bank vacant vacant vacant vacant) (bank farmer wolf cabbage goat) 
+  start (state (bank farmer wolf cabbage goat) (bank vacant vacant vacant vacant)) |- ()
+  end (state (bank vacant vacant vacant vacant) (bank farmer wolf cabbage goat))  |- ()
 
   -- Legal state
-  , fact $ unsafe $ bank vacant wolf "?C" goat
-  , fact $ unsafe $ bank vacant "?W" cabbage goat
-  , fact $ safe $ bank farmer "?W" "?C" "?G"
-  , safe "?B" |- neg (unsafe "?B")
-  , legal (state "?B" "?B'") |- safe "?B" /\ safe "?B'"
+  unsafe (bank vacant wolf "?C" goat) |- ()
+  unsafe (bank vacant "?W" cabbage goat) |- ()
+  safe (bank farmer "?W" "?C" "?G") |- ()
+  safe "?B" |- neg (unsafe "?B")
+  legal (state "?B" "?B'") |- safe "?B" /\ safe "?B'"
 
   -- Solver
-  , solve' "?St" "?History" "?History" |- end "?St"
-  , solve' "?St" "?History" "?Sts" |-
-      bimove "?St" "?St'" /\
-      neg (List.member "?St'" "?History") /\
-      legal "?St'" /\
-      solve' "?St'" (List.cons "?St'" "?History") "?Sts"
-  , solve "?Sts" |-
-      start "?St" /\
-      solve' "?St" (List.cons "?St" List.nil) "?Sts"
-  ]
+  solve' "?St" "?History" "?History" |- end "?St"
+  solve' "?St" "?History" "?Sts" |-
+    bimove "?St" "?St'" /\
+    neg (List.member "?St'" "?History") /\
+    legal "?St'" /\
+    solve' "?St'" (List.cons "?St'" "?History") "?Sts"
+  solve "?Sts" |-
+    start "?St" /\
+    solve' "?St" (List.cons "?St" List.nil) "?Sts"

@@ -35,11 +35,10 @@ spec =
   describe "LinearResolution" $ do
     describe "p :- q, r. q :- r. r." $ do
       let [p, q, r, s] = (`Atom` []) <$> ["p", "q", "r", "s"]
-      let pr =
-            [ p |- q /\ r
-            , q |- r
-            , fact r
-            ]
+      let pr = generate_ $ do
+            p |- q /\ r
+            q |- r
+            r |- ()
 
       it "p" $ holds pr p
       it "q" $ holds pr q
@@ -71,12 +70,11 @@ spec =
 
     describe "p :- q, r. q :- s. q :- r. r." $ do
       let [p, q, r, s] = (`Atom` []) <$> ["p", "q", "r", "s"]
-      let pr =
-            [ p |- q /\ r
-            , q |- s
-            , q |- r
-            , fact r
-            ]
+      let pr = generate_ $ do
+            p |- q /\ r
+            q |- s
+            q |- r
+            r |- ()
 
       it "p" $ holds pr p
       it "q" $ holds pr q
@@ -86,11 +84,10 @@ spec =
 
     describe "p :- q, r. q :- s. q :- r." $ do
       let [p, q, r, s] = (`Atom` []) <$> ["p", "q", "r", "s"]
-      let pr =
-            [ p |- q /\ r
-            , q |- s
-            , q |- r
-            ]
+      let pr = generate_ $ do
+            p |- q /\ r
+            q |- s
+            q |- r
 
       it "not p" $ doesntHold pr p
       it "not q" $ doesntHold pr q
@@ -101,18 +98,17 @@ spec =
       let [p, q] = (`Atom` []) <$> ["p", "q"]
       let p = Atom "p" []
       let q = Atom "q" []
-      let pr =
-            [ p |- q
-            , fact q
-            , q |- q
-            ]
+      let pr = generate_ $ do
+            p |- q
+            q |- ()
+            q |- q
 
       it "p" $ holds pr p
       it "q" $ holds pr q
 
     describe "reflexive" $ do
       let refl t1 t2 = Atom "refl" [ t1, t2 ]
-      let pr = [ fact $ refl "?X" "?X" ]
+      let pr = generate_ $ refl "?X" "?X" |- ()
 
       let resolvesTo' = resolvesTo pr
       it "refl(1, ?X) resolves to refl(1, 1)" $
@@ -130,15 +126,14 @@ spec =
     describe "ancestor" $ do
       let adviser t1 t2 = Atom "adviser" [t1, t2]
       let ancestor t1 t2 = Atom "ancestor" [t1, t2]
-      let pr =
-            [ ancestor "?X" "?Y" |- adviser "?X" "?Y"
-            , ancestor "?X" "?Z" |- adviser "?X" "?Y" /\ ancestor "?Y" "?Z"
-            , fact $ adviser "Andy Rice" "Mistral Contrastin"
-            , fact $ adviser "Dominic Orchard" "Mistral Contrastin"
-            , fact $ adviser "Alan Mycroft" "Dominic Orchard"
-            , fact $ adviser "Andy Hopper" "Andy Rice"
-            , fact $ adviser "David Wheeler" "Andy Hopper"
-            ]
+      let pr = generate_ $ do
+            ancestor "?X" "?Y" |- adviser "?X" "?Y"
+            ancestor "?X" "?Z" |- adviser "?X" "?Y" /\ ancestor "?Y" "?Z"
+            adviser "Andy Rice" "Mistral Contrastin" |- ()
+            adviser "Dominic Orchard" "Mistral Contrastin" |- ()
+            adviser "Alan Mycroft" "Dominic Orchard" |- ()
+            adviser "Andy Hopper" "Andy Rice" |- ()
+            adviser "David Wheeler" "Andy Hopper" |- ()
 
       it "ancestor('Andy Rice', 'Mistral Contrastin')" $
         holds pr $ ancestor "Andy Rice" "Mistral Contrastin"
@@ -170,10 +165,9 @@ spec =
       let even t = Atom "even" [ t ]
       let succ t = Fx "succ" [ t ]
       let z = "z"
-      let pr =
-            [ fact $ even z
-            , even (succ $ succ "?N") |- even "?N"
-            ]
+      let pr = generate_ $ do
+            even z |- ()
+            even (succ $ succ "?N") |- even "?N"
 
       it "even(z)" $ holds pr $ even z
 
@@ -208,16 +202,15 @@ spec =
       let [robin, owl, kiwi, bird, fly, no_fly_list] =
             (\name t -> Atom name [ t ]) <$>
               ["robin", "owl", "kiwi", "bird", "fly", "no_fly_list"]
-      let pr =
-            [ fly "?B" |- bird "?B" /\ neg (no_fly_list "?B")
-            , bird "?B" |- robin "?B"
-            , bird "?B" |- owl "?B"
-            , bird "?B" |- kiwi "?B"
-            , no_fly_list "?SadBird" |- kiwi "?SadBird"
-            , fact $ robin "Henri"
-            , fact $ kiwi "Mistral"
-            , fact $ owl "Michael"
-            ]
+      let pr = generate_ $ do
+            fly "?B" |- bird "?B" /\ neg (no_fly_list "?B")
+            bird "?B" |- robin "?B"
+            bird "?B" |- owl "?B"
+            bird "?B" |- kiwi "?B"
+            no_fly_list "?SadBird" |- kiwi "?SadBird"
+            robin "Henri" |- ()
+            kiwi "Mistral" |- ()
+            owl "Michael" |- ()
 
       it "fly('Henri')" $
         holds pr (fly "Henri")

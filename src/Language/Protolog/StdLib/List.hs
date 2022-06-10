@@ -15,9 +15,8 @@ cons x xs = Fx "List.cons" [ x, xs ]
 member :: Term -> Term -> Atom
 member x xs = Atom "List.member" [ x, xs ]
 
-defs :: [ Clause ]
-defs =
+include :: ProtologM ()
+include = do
   -- `member(?X, ?XS)` holds when `?X` is a member of `?XS`
-  [ fact $ member "?X" (cons "?X" "?XS")
-  , member "?X" (cons "?Y" "?XS") |- member "?X" "?XS"
-  ]
+  member "?X" (cons "?X" "?XS") |- ()
+  member "?X" (cons "?Y" "?XS") |- member "?X" "?XS"
