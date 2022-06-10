@@ -15,9 +15,9 @@ import Language.Protolog.AST
 import qualified Language.Protolog.Unification as Unify
 import qualified Language.Protolog.Naming as Naming
 import qualified Language.Protolog.Substitution as Subst
-import Language.Protolog.Provenance
+import qualified Language.Protolog.Provenance as Prov
 
-resolve :: Unify.Env -> GoalStack -> Clause -> Maybe (Unify.Env, GoalStack)
+resolve :: Unify.Env -> Prov.GoalStack -> Clause -> Maybe (Unify.Env, Prov.GoalStack)
 resolve _ [] _ = error "Why are you resolving?"
 resolve _ ([] : _) _ = error "Why are you resolving?"
 resolve _ ((Literal Negative _: _) : _) _ = error "Can't resolve a negative goal"
@@ -27,14 +27,14 @@ resolve env ((Literal Positive p : ps) : pss) (q :- qs)
 
 type ContextM p a = Reader (Int, Unify.Env, p) a
 
-derive :: forall p. Provenance p => [ Clause ] -> Literal -> Maybe (Unify.Env, p)
+derive :: forall p. Prov.Provenance p => [ Clause ] -> Literal -> Maybe (Unify.Env, p)
 derive originalClauses query =
   runReader (go queryGoalStack originalClauses) (0, P.empty, queryProvenance)
   where
   queryGoalStack = [ [ query ] ]
-  queryProvenance = unit queryGoalStack
+  queryProvenance = Prov.query queryGoalStack
 
-  go :: GoalStack -> [ Clause ] -> ContextM p (Maybe (Unify.Env, p))
+  go :: Prov.GoalStack -> [ Clause ] -> ContextM p (Maybe (Unify.Env, p))
   go [] _ = do
     (_, env, pt) <- R.ask
     pure $ Just (env, pt)
@@ -43,12 +43,13 @@ derive originalClauses query =
     res <- go [ [ Literal Positive goal ] ] clauses
     case res of
       Just _ -> pure Nothing
-      Nothing -> go (goals : goalss) clauses
+      Nothing -> local (\(i, env, pt) -> (i, env, Prov.negative pt env (goals : goalss))) $
+        go (goals : goalss) clauses
   go goals (clause : clauses) = do
     (i, env, pt) <- R.ask
     let namedClause = Naming.clause i clause
     case resolve env goals namedClause of
-      Just (env', goals') | pt' <- connect pt env' goals' namedClause -> do
+      Just (env', goals') | pt' <- Prov.positive pt env' goals' namedClause -> do
         onSuccess <- local (const (i + 1, env', pt')) (go goals' originalClauses)
         onFailure <- go goals clauses
         -- Despite resolution succeeding right now, derivation fails somewhere
@@ -67,8 +68,8 @@ run originalClauses query =
     Just (env, ()) -> Just (Subst.literal env query)
     Nothing -> Nothing
 
-runWithProvenance :: [ Clause ] -> Literal -> Maybe ProvenanceTree
+runWithProvenance :: [ Clause ] -> Literal -> Maybe Prov.ProvenanceTree
 runWithProvenance originalClauses query =
   case derive originalClauses query of
-    Just (env, pt) -> Just (substProvenanceTree pt)
+    Just (env, pt) -> Just (Prov.substProvenanceTree pt)
     Nothing -> Nothing

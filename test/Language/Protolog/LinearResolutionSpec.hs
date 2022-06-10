@@ -51,11 +51,11 @@ spec =
       it "provenance of p" $
         pred (lit p) `shouldBe`
           Just
-            (PNode
-              (PNode
-                (PNode
-                  (PNode
-                    (PLeaf [lit p])
+            (PPositive
+              (PPositive
+                (PPositive
+                  (PPositive
+                    (PQuery [lit p])
                     P.empty
                     [lit q, lit r]
                     (p :- [lit q, lit r]))

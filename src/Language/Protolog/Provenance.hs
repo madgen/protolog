@@ -11,12 +11,14 @@ import Language.Protolog.Unification
 import qualified Language.Protolog.Substitution as Subst
 
 class Provenance p where
-  unit :: GoalStack -> p
-  connect :: p -> Env -> GoalStack -> Clause -> p
+  query :: GoalStack -> p
+  positive :: p -> Env -> GoalStack -> Clause -> p
+  negative :: p -> Env -> GoalStack -> p
 
 instance Provenance () where
-  unit _ = ()
-  connect _ _ _ _ = ()
+  query _ = ()
+  positive _ _ _ _ = ()
+  negative _ _ _ = ()
 
 --------------------------------------------------------------------------------
 -- Full-fidelity provenance tree
@@ -26,25 +28,32 @@ type GoalStack = [ [ Literal ] ]
 type FlatGoalStack = [ Literal ]
 
 data ProvenanceTree =
-    PNode ProvenanceTree Env FlatGoalStack Clause
-  | PLeaf FlatGoalStack
+    PPositive ProvenanceTree Env FlatGoalStack Clause
+  | PNegative ProvenanceTree Env FlatGoalStack
+  | PQuery FlatGoalStack
   deriving (Show, Eq)
 
 substProvenanceTree :: ProvenanceTree -> ProvenanceTree
-substProvenanceTree (PLeaf gs) = PLeaf gs
-substProvenanceTree (PNode pt env gs cl) =
-  PNode
+substProvenanceTree (PQuery gs) = PQuery gs
+substProvenanceTree (PPositive pt env gs cl) =
+  PPositive
     (substProvenanceTree pt)
     env
     (substFlatGoalStack env gs)
     cl
+substProvenanceTree (PNegative pt env gs) =
+  PNegative
+    (substProvenanceTree pt)
+    env
+    (substFlatGoalStack env gs)
 
 substFlatGoalStack :: Env -> FlatGoalStack -> FlatGoalStack
 substFlatGoalStack env = map (Subst.literal env)
 
 instance Provenance ProvenanceTree where
-  unit = PLeaf . concat
-  connect pt env gs = PNode pt env (concat gs)
+  query = PQuery . concat
+  positive pt env gs = PPositive pt env (concat gs)
+  negative pt env gs = PNegative pt env (concat gs)
 
 --------------------------------------------------------------------------------
 -- Convert provenance tree to a graph for visualisation
@@ -88,11 +97,11 @@ toGraph :: ProvenanceTree -> ProvenanceGraph
 toGraph = mkGraph . go
   where
   go :: ProvenanceTree -> GraphBuilderM G.Node
-  go (PLeaf gs) = do
+  go (PQuery gs) = do
     node <- newNode
     addNode (node, show gs)
     pure node
-  go (PNode pt env gs cl@(head :- _)) = do
+  go (PPositive pt env gs cl@(head :- _)) = do
     src1 <- go pt
     src2 <- newNode
     dst <- newNode
@@ -103,14 +112,23 @@ toGraph = mkGraph . go
     let substs2 = edgeSubsts env head
     addEdge src2 dst substs2
     pure dst
+  go (PNegative pt env gs) = do
+    src <- go pt
+    dst <- newNode
+    addNode (dst, show gs)
+    let substs = edgeSubsts env $ headGoal pt
+    addEdge src dst substs
+    pure dst
 
   edgeSubsts env = filter (not . Subst.isTrivial) . fmap (Subst.mk env) . vars
 
 headGoal :: ProvenanceTree -> Literal
-headGoal (PNode _ _ [] _) = error "Called it on the root node"
-headGoal (PNode _ _ (l : _) _) = l
-headGoal (PLeaf []) = error "Impossible: Called it on the root node which is also a leaf!"
-headGoal (PLeaf (l : _)) = l
+headGoal (PPositive _ _ [] _) = error "Called it on the root node"
+headGoal (PPositive _ _ (l : _) _) = l
+headGoal (PNegative _ _ []) = error "Called it on the root node"
+headGoal (PNegative _ _ (l : _)) = l
+headGoal (PQuery []) = error "Impossible: Called it on the root node which is also a leaf!"
+headGoal (PQuery (l : _)) = l
 
 visualise :: ProvenanceTree -> FilePath -> IO FilePath
 visualise pt = GV.runGraphviz dotGraph GV.Jpeg
