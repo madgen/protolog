@@ -53,6 +53,7 @@ test-suite protolog-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Common
       Language.Protolog.LinearResolutionSpec
       WolfGoatCabbageSpec
       Paths_protolog
