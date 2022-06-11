@@ -54,6 +54,7 @@ test-suite protolog-test
   main-is: Spec.hs
   other-modules:
       Language.Protolog.LinearResolutionSpec
+      WolfGoatCabbageSpec
       Paths_protolog
   hs-source-dirs:
       test
