@@ -113,46 +113,6 @@ instance CanPredicate 4 (Term -> Term -> Term -> Term -> Atom) where
     }
   namePred name = fmap (fmap (fmap (fmap (namePred_ name))))
 
-instance CanPredicate 5 (Term -> Term -> Term -> Term -> Term -> Atom) where
-  mkPred name t1 t2 t3 t4 t5 = Atom
-    { _canonicalName = name
-    , _printName = name
-    , _terms = [ t1, t2, t3, t4, t5 ]
-    }
-  namePred name = fmap (fmap (fmap (fmap (fmap (namePred_ name)))))
-
-instance CanPredicate 6 (Term -> Term -> Term -> Term -> Term -> Term -> Atom) where
-  mkPred name t1 t2 t3 t4 t5 t6 = Atom
-    { _canonicalName = name
-    , _printName = name
-    , _terms = [ t1, t2, t3, t4, t5, t6 ]
-    }
-  namePred name = fmap (fmap (fmap (fmap (fmap (fmap (namePred_ name))))))
-
-instance CanPredicate 7 (Term -> Term -> Term -> Term -> Term -> Term -> Term -> Atom) where
-  mkPred name t1 t2 t3 t4 t5 t6 t7 = Atom
-    { _canonicalName = name
-    , _printName = name
-    , _terms = [ t1, t2, t3, t4, t5, t6, t7 ]
-    }
-  namePred name = fmap (fmap (fmap (fmap (fmap (fmap (fmap (namePred_ name)))))))
-
-instance CanPredicate 8 (Term -> Term -> Term -> Term -> Term -> Term -> Term -> Term -> Atom) where
-  mkPred name t1 t2 t3 t4 t5 t6 t7 t8 = Atom
-    { _canonicalName = name
-    , _printName = name
-    , _terms = [ t1, t2, t3, t4, t5, t6, t7, t8 ]
-    }
-  namePred name = fmap (fmap (fmap (fmap (fmap (fmap (fmap (fmap (namePred_ name))))))))
-
-instance CanPredicate 9 (Term -> Term -> Term -> Term -> Term -> Term -> Term -> Term -> Term -> Atom) where
-  mkPred name t1 t2 t3 t4 t5 t6 t7 t8 t9 = Atom
-    { _canonicalName = name
-    , _printName = name
-    , _terms = [ t1, t2, t3, t4, t5, t6, t7, t8, t9 ]
-    }
-  namePred name = fmap (fmap (fmap (fmap (fmap (fmap (fmap (fmap (fmap (namePred_ name)))))))))
-
 namePred_ :: Name -> Atom -> Atom
 namePred_ name Atom{..} = Atom{_printName = name, ..}
 
@@ -205,46 +165,6 @@ instance CanFunction 4 (Term -> Term -> Term -> Term -> Term) where
     , _terms = [ t1, t2, t3, t4 ]
     }
   nameFx name = fmap (fmap (fmap (fmap (nameFx_ name))))
-
-instance CanFunction 5 (Term -> Term -> Term -> Term -> Term -> Term) where
-  mkFx name t1 t2 t3 t4 t5 = Fx
-    { _canonicalName = name
-    , _printName = name
-    , _terms = [ t1, t2, t3, t4, t5 ]
-    }
-  nameFx name = fmap (fmap (fmap (fmap (fmap (nameFx_ name)))))
-
-instance CanFunction 6 (Term -> Term -> Term -> Term -> Term -> Term -> Term) where
-  mkFx name t1 t2 t3 t4 t5 t6 = Fx
-    { _canonicalName = name
-    , _printName = name
-    , _terms = [ t1, t2, t3, t4, t5, t6 ]
-    }
-  nameFx name = fmap (fmap (fmap (fmap (fmap (fmap (nameFx_ name))))))
-
-instance CanFunction 7 (Term -> Term -> Term -> Term -> Term -> Term -> Term -> Term) where
-  mkFx name t1 t2 t3 t4 t5 t6 t7 = Fx
-    { _canonicalName = name
-    , _printName = name
-    , _terms = [ t1, t2, t3, t4, t5, t6, t7 ]
-    }
-  nameFx name = fmap (fmap (fmap (fmap (fmap (fmap (fmap (nameFx_ name)))))))
-
-instance CanFunction 8 (Term -> Term -> Term -> Term -> Term -> Term -> Term -> Term -> Term) where
-  mkFx name t1 t2 t3 t4 t5 t6 t7 t8 = Fx
-    { _canonicalName = name
-    , _printName = name
-    , _terms = [ t1, t2, t3, t4, t5, t6, t7, t8 ]
-    }
-  nameFx name = fmap (fmap (fmap (fmap (fmap (fmap (fmap (fmap (nameFx_ name))))))))
-
-instance CanFunction 9 (Term -> Term -> Term -> Term -> Term -> Term -> Term -> Term -> Term -> Term) where
-  mkFx name t1 t2 t3 t4 t5 t6 t7 t8 t9 = Fx
-    { _canonicalName = name
-    , _printName = name
-    , _terms = [ t1, t2, t3, t4, t5, t6, t7, t8, t9 ]
-    }
-  nameFx name = fmap (fmap (fmap (fmap (fmap (fmap (fmap (fmap (fmap (nameFx_ name)))))))))
 
 nameFx_ :: Name -> Term -> Term
 nameFx_ name Fx{..} = Fx{_printName = name, ..}
