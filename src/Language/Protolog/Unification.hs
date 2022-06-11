@@ -10,7 +10,7 @@ import Language.Protolog.AST
 type Env = P.Partition Term
 
 atom :: Env -> Atom -> Atom -> Maybe Env
-atom env (Atom p ts) (Atom p' ts')
+atom env (Atom p _ ts) (Atom p' _ ts')
   | p == p' = terms env ts ts'
   | otherwise = Nothing
 
@@ -23,5 +23,5 @@ term (t1, t2) (Just env) =
   case (P.rep env t1, P.rep env t2) of
     (t1'@(Var x), t2') -> Just (P.joinElems t1' t2' env)
     (t1', t2'@(Var x)) -> Just (P.joinElems t1' t2' env)
-    (Fx c ts, Fx c' ts') ->
+    (Fx c _ ts, Fx c' _ ts') ->
       if c == c' then terms env ts ts' else Nothing

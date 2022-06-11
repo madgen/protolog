@@ -6,22 +6,26 @@ module WolfGoatCabbage where
 import qualified Language.Protolog.StdLib.List as List
 import Language.Protolog
 
-program :: ProtologM (Term -> Atom)
+program :: ProtologM
+  ( Term -> Atom
+  , Term -> Term -> Term
+  , Term -> Term -> Term -> Term -> Term
+  )
 program = do
   List.include
 
-  wolf <- freshFx @0
-  goat <- freshFx @0
-  cabbage <- freshFx @0
-  farmer <- freshFx @0
-  vacant <- freshFx @0
+  let wolf = "wolf"
+  let goat = "goat"
+  let cabbage = "cabbage"
+  let farmer = "farmer"
+  let vacant = "vacant"
 
   -- A bank that is one side of river has four spots that are either vacant or
   -- occupied by one of goat, cabbage, wolf, and farmer.
-  bank <- freshFx @4
+  bank <- nameFx @4 "bank" <$> freshFx @4
 
   -- A state is two banks at any given time
-  state <- freshFx @2
+  state <- nameFx @2 "state" <$> freshFx @2
 
   -- Moves in one direction
   move <- freshPred @2
@@ -51,7 +55,7 @@ program = do
     |- ()
 
   -- Moves back and forth
-  bimove <- freshPred @2
+  bimove <- namePred @2 "bimove" <$> freshPred @2
   bimove "?St" "?St'" |- move "?St" "?St'"
   bimove "?St" "?St'" |- move "?St'" "?St"
 
@@ -88,4 +92,4 @@ program = do
     start "?St" /\
     solve' "?St" (List.cons "?St" List.nil) "?Sts"
 
-  pure solve
+  pure (solve, state, bank)

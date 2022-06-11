@@ -9,13 +9,13 @@ import Language.Protolog.AST
 import Language.Protolog.DSL
 
 nil :: Term
-nil = Fx "List.nil" []
+nil = Fx "List.nil" "List.nil" []
 
 cons :: Term -> Term -> Term
-cons x xs = Fx "List.cons" [ x, xs ]
+cons x xs = Fx "List.cons" "List.cons" [ x, xs ]
 
 member :: Term -> Term -> Atom
-member x xs = Atom "List.member" [ x, xs ]
+member x xs = Atom "List.member" "List.member" [ x, xs ]
 
 include :: ProtologM ()
 include = do
@@ -30,5 +30,5 @@ instance IsList Term where
 
   toList term
     | term == nil = []
-    | Fx "List.cons" [ x, xs ] <- term = x : toList xs
+    | Fx "List.cons" _ [ x, xs ] <- term = x : toList xs
     | otherwise = error "Trying to convert something that is not a list to a list" 

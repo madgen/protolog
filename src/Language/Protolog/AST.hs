@@ -1,5 +1,8 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 module Language.Protolog.AST where
 
@@ -19,9 +22,19 @@ data Literal = Literal Polarity Atom deriving Eq
 
 data Polarity = Positive | Negative deriving Eq
 
-data Atom = Atom Name [ Term ] deriving Eq
+data Atom = Atom
+  { _canonicalName :: Name
+  , _printName :: Name
+  , _terms :: [ Term ]
+  } deriving Eq
 
-data Term = Fx Name [ Term ] | Var Name deriving (Eq, Ord)
+data Term =
+    Fx
+      { _canonicalName :: Name
+      , _printName :: Name
+      , _terms :: [ Term ]
+      }
+  | Var Name deriving (Eq, Ord)
 
 type Name = T.Text
 
@@ -42,15 +55,17 @@ instance {-# OVERLAPPING #-} Show [ Term ] where
   show terms = "(" <> intercalate ", " (map show terms) <> ")"
 
 instance Show Atom where
-  show (Atom name terms) = T.unpack name <> show terms
+  show Atom{..} = T.unpack _printName <> show _terms
 
 instance Show Term where
-  show (Fx name terms) = T.unpack name <> show terms
+  show Fx{..} = T.unpack _printName <> show _terms
   show (Var name) = T.unpack ("?" <> name)
 
 instance IsString Term where
   fromString ('?' : rest) = Var (T.pack rest)
-  fromString str = Fx (T.pack str) []
+  fromString str = Fx {_canonicalName = t, _printName = t, _terms = []}
+    where
+    t = T.pack str
 
 class HasVars a where
   vars :: a -> [ Term ]
@@ -59,8 +74,8 @@ instance HasVars Literal where
   vars (Literal _ atom) = vars atom
 
 instance HasVars Atom where
-  vars (Atom _ terms) = nub $ concatMap vars terms
+  vars Atom{_terms} = nub $ concatMap vars _terms
 
 instance HasVars Term where
   vars t@(Var x) = [ t ]
-  vars t@(Fx _ terms) = nub $ concatMap vars terms
+  vars t@Fx{_terms} = nub $ concatMap vars _terms

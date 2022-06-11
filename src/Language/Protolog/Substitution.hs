@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 module Language.Protolog.Substitution
   ( mk
   , isTrivial
@@ -32,7 +33,7 @@ literal :: Unify.Env -> Literal -> Literal
 literal env (Literal polarity a) = Literal polarity (atom env a)
 
 atom :: Unify.Env -> Atom -> Atom
-atom env (Atom name ts) = Atom name (terms env ts)
+atom env Atom{..} = Atom{_terms = terms env _terms, ..}
 
 terms :: Unify.Env -> [ Term ] -> [ Term ]
 terms env = map (term env)
@@ -43,4 +44,4 @@ term env t@Var{}
   | otherwise = term env rep
   where
   rep = P.rep env t
-term env (Fx name ts) = Fx name (terms env ts)
+term env Fx{..} = Fx{_terms = terms env _terms, ..}
