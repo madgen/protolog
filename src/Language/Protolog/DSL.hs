@@ -69,9 +69,21 @@ instance Negatable Literal where
   neg (Literal Positive atom) = Literal Negative atom
   neg (Literal Negative atom) = error "No support for double negation"
 
+class HasPrettyName ty where
+  addPrettyName :: Name -> ty -> ty
+
+instance HasPrettyName Atom where
+  addPrettyName name Atom{..} = Atom{_printName = name, ..}
+
+instance HasPrettyName Term where
+  addPrettyName name Fx{..} = Fx{_printName = name, ..}
+  addPrettyName _ Var{} = error "cannot name a variable"
+
+instance HasPrettyName ty => HasPrettyName (Term -> ty) where
+  addPrettyName name = fmap (addPrettyName name)
+
 class KnownNat n => CanPredicate n fx | n -> fx where
   mkPred :: Name -> fx
-  namePred :: Name -> fx -> fx
 
 instance CanPredicate 0 Atom where
   mkPred name = Atom
@@ -79,7 +91,6 @@ instance CanPredicate 0 Atom where
     , _printName = name
     , _terms = []
     }
-  namePred = namePred_
 
 instance CanPredicate 1 (Term -> Atom) where
   mkPred name t = Atom
@@ -87,7 +98,6 @@ instance CanPredicate 1 (Term -> Atom) where
     , _printName = name
     , _terms = [ t ]
     }
-  namePred name = fmap (namePred_ name)
 
 instance CanPredicate 2 (Term -> Term -> Atom) where
   mkPred name t1 t2 = Atom
@@ -95,7 +105,6 @@ instance CanPredicate 2 (Term -> Term -> Atom) where
     , _printName = name
     , _terms = [ t1, t2 ]
     }
-  namePred name = fmap (fmap (namePred_ name))
 
 instance CanPredicate 3 (Term -> Term -> Term -> Atom) where
   mkPred name t1 t2 t3 = Atom
@@ -103,7 +112,6 @@ instance CanPredicate 3 (Term -> Term -> Term -> Atom) where
     , _printName = name
     , _terms = [ t1, t2, t3 ]
     }
-  namePred name = fmap (fmap (fmap (namePred_ name)))
 
 instance CanPredicate 4 (Term -> Term -> Term -> Term -> Atom) where
   mkPred name t1 t2 t3 t4 = Atom
@@ -111,10 +119,6 @@ instance CanPredicate 4 (Term -> Term -> Term -> Term -> Atom) where
     , _printName = name
     , _terms = [ t1, t2, t3, t4 ]
     }
-  namePred name = fmap (fmap (fmap (fmap (namePred_ name))))
-
-namePred_ :: Name -> Atom -> Atom
-namePred_ name Atom{..} = Atom{_printName = name, ..}
 
 freshPred :: forall n fx. CanPredicate n fx => ProtologM fx
 freshPred = do
@@ -124,7 +128,6 @@ freshPred = do
 
 class KnownNat n => CanFunction n fx | n -> fx where
   mkFx :: Name -> fx
-  nameFx :: Name -> fx -> fx
 
 instance CanFunction 0 Term where
   mkFx name = Fx
@@ -132,7 +135,6 @@ instance CanFunction 0 Term where
     , _printName = name
     , _terms = []
     }
-  nameFx = nameFx_
 
 instance CanFunction 1 (Term -> Term) where
   mkFx name t = Fx
@@ -140,7 +142,6 @@ instance CanFunction 1 (Term -> Term) where
     , _printName = name
     , _terms = [ t ]
     }
-  nameFx name = fmap (nameFx_ name)
 
 instance CanFunction 2 (Term -> Term -> Term) where
   mkFx name t1 t2 = Fx
@@ -148,7 +149,6 @@ instance CanFunction 2 (Term -> Term -> Term) where
     , _printName = name
     , _terms = [ t1, t2 ]
     }
-  nameFx name = fmap (fmap (nameFx_ name))
 
 instance CanFunction 3 (Term -> Term -> Term -> Term) where
   mkFx name t1 t2 t3 = Fx
@@ -156,7 +156,6 @@ instance CanFunction 3 (Term -> Term -> Term -> Term) where
     , _printName = name
     , _terms = [ t1, t2, t3 ]
     }
-  nameFx name = fmap (fmap (fmap (nameFx_ name)))
 
 instance CanFunction 4 (Term -> Term -> Term -> Term -> Term) where
   mkFx name t1 t2 t3 t4 = Fx
@@ -164,11 +163,6 @@ instance CanFunction 4 (Term -> Term -> Term -> Term -> Term) where
     , _printName = name
     , _terms = [ t1, t2, t3, t4 ]
     }
-  nameFx name = fmap (fmap (fmap (fmap (nameFx_ name))))
-
-nameFx_ :: Name -> Term -> Term
-nameFx_ name Fx{..} = Fx{_printName = name, ..}
-nameFx_ _ Var{} = error "cannot name a variable"
 
 freshFx :: forall n fx. CanFunction n fx => ProtologM fx
 freshFx = do

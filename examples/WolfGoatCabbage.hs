@@ -22,10 +22,10 @@ program = do
 
   -- A bank that is one side of river has four spots that are either vacant or
   -- occupied by one of goat, cabbage, wolf, and farmer.
-  bank <- nameFx @4 "bank" <$> freshFx @4
+  bank <- addPrettyName "bank" <$> freshFx @4
 
   -- A state is two banks at any given time
-  state <- nameFx @2 "state" <$> freshFx @2
+  state <- addPrettyName "state" <$> freshFx @2
 
   -- Moves in one direction
   move <- freshPred @2
@@ -55,7 +55,7 @@ program = do
     |- ()
 
   -- Moves back and forth
-  bimove <- namePred @2 "bimove" <$> freshPred @2
+  bimove <- addPrettyName "bimove" <$> freshPred @2
   bimove "?St" "?St'" |- move "?St" "?St'"
   bimove "?St" "?St'" |- move "?St'" "?St"
 
