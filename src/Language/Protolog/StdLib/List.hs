@@ -1,7 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE TypeFamilies #-}
 module Language.Protolog.StdLib.List where
 
-import Prelude hiding (elem)
+import GHC.Exts (IsList(..))
 
 import Language.Protolog.AST
 import Language.Protolog.DSL
@@ -20,3 +22,13 @@ include = do
   -- `member(?X, ?XS)` holds when `?X` is a member of `?XS`
   member "?X" (cons "?X" "?XS") |- ()
   member "?X" (cons "?Y" "?XS") |- member "?X" "?XS"
+
+instance IsList Term where
+  type Item Term = Term
+  fromList [] = nil
+  fromList (x : xs) = cons x (fromList xs)
+
+  toList term
+    | term == nil = []
+    | Fx "List.cons" [ x, xs ] <- term = x : toList xs
+    | otherwise = error "Trying to convert something that is not a list to a list" 
